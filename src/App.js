@@ -7,18 +7,23 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
-import { createStackNavigator, createAppContainer, NavigationActions } from 'react-navigation';
+import { createStackNavigator, createAppContainer, createSwitchNavigator, NavigationActions, StackActions } from 'react-navigation';
 import { fromRight } from 'react-navigation-transitions';
-import Drawer from 'react-native-drawer'
+import Drawer from 'react-native-drawer';
+import SplashScreen from './routes/SplashScreen';
 import Home from './routes/Home';
 import Console from './routes/Console';
 import Settings from './routes/Settings';
 import Files from './routes/Files';
+import About from './routes/About';
+import Help from './routes/Help';
 import DrawerContent from './components/DrawerContent';
 import { StoreProvider, createStore } from 'easy-peasy';
 import storeModel from './store';
 import themes from './utils/themes';
+import { openFileSchema } from './utils/helpers.js';
 import { readFile } from './utils/FSManager';
 
 const store = createStore(storeModel);
@@ -27,26 +32,31 @@ var oldLog = console.log;
 console.log = function (message) {
   Object.values(arguments)
     .forEach(m => 
-    	null
-    	//store.getActions().log(m)
+    	//null
+    	store.getActions().log(m)
    	)
   oldLog.apply(console, arguments);
 }
 
+const { primary, primaryDark, maincolor } = store.getState().theme;
+
 const MainNavigator = createStackNavigator({
+	SplashScreen: { screen: SplashScreen },
   Home: { screen: Home },
   Console: { screen: Console },
   Settings: { screen: Settings },
-  Files: { screen: Files }
+  Files: { screen: Files },
+  About: { screen: About },
+  Help: { screen: Help }
 },
 {
-  initialRouteName: 'Home',
+  initialRouteName: 'SplashScreen',
   transitionConfig: () => fromRight(),
   defaultNavigationOptions: {
     headerStyle: {
-      backgroundColor: store.getState().theme.primary,
+      backgroundColor: primary,
     },
-    headerTintColor: store.getState().theme.maincolor,
+    headerTintColor: maincolor,
     headerTitleStyle: {
       fontWeight: 'bold',
     },
@@ -58,9 +68,9 @@ const Navigator = createAppContainer(MainNavigator);
 function App() {
 	const _navigator = useRef(null);
 	const _drawer = useRef(null);
-	const { currentFile, theme, themeColors } = store.getState();
 	const setTheme = store.getActions().setTheme;
-	const setCurrentFile = store.getActions().setCurrentFile;
+	const addOpenFile = store.getActions().addOpenFile;
+	const setOpenedFiles = store.getActions().setOpenedFiles;
 
   const navigate = (routeName, params = {}) => {
 	  _navigator.current.dispatch(
@@ -69,34 +79,72 @@ function App() {
 	  _drawer.current.close();
 	}
 
+	const navigateOnLoad = () => {
+		const resetAction = StackActions.reset({
+		  index: 0,
+		  actions: [NavigationActions.navigate({ routeName: 'Home' })],
+		});
+		_navigator.current.dispatch(resetAction);
+	}
+
 	useEffect(() => {
 		AsyncStorage.multiGet([
 			'theme',
 			'highlighter',
-			'currentFile'
+			'openedFiles'
 		])
 			.then(array => {
 				const {
 					theme: t,
 					highlighter,
-					currentFile
+					openedFiles
 				} = (array || []).reduce((acc, [ key, value ]) => ({
 					...acc,
 					[key]: value
-				}), {});
-				setTheme({ selectedTheme: t || 'obsidian', highlighter: highlighter || 'hljs' });
-				if (currentFile) {
-	      	setCurrentFile(currentFile);
-					readFile(currentFile)
-	          .then(code => {
-	            navigate('Home', { code });
-	          })
-	          .catch(() => 
-	          	AsyncStorage.removeItem('currentFile')
-	          )
-	      }
+				}), {});				
+				setTheme({
+					selectedTheme: t || 'obsidian',
+					highlighter: highlighter || 'hljs'
+				});
+				const opf = JSON.parse(openedFiles);
+	      if (opf && opf.length > 0) {
+	      	Promise.all(
+	      		opf.map((f, i) =>
+	      			readFile(f)
+	      				.catch(e => null)
+	      		)
+	      	)
+	      		.then(codeArray => codeArray.filter(x => x))	      		
+	      		.then(codeArray =>
+	      			codeArray.map((code, i) =>
+	      				openFileSchema(
+	      					opf[i],
+	      					code
+	      				)
+	      			)
+	      		)
+	      		.then(op => {
+	      			setOpenedFiles(op);
+	      			if (op.length != opf.length) {
+		      			AsyncStorage.setItem(
+					  			'openedFiles',
+					  			JSON.stringify(
+					  				op.map(o => o.filename)
+					  			)
+					  		);
+					  	}
+					  	navigateOnLoad();
+	      		})
+	      		.catch((e) => {
+	      			navigateOnLoad();
+	          	AsyncStorage.removeItem('openedFiles');
+	      		});
+	      } else {
+	      	addOpenFile(openFileSchema());
+	      	navigateOnLoad();
+	      }	      
 			});
-	}, [theme]);	
+	}, [false]);	
 
 	const getThemesFromStyles = (style) => {
 		const forbidden = ['cb', 'hopscotch', 'funky', 'pojoaque', 'schoolBook', 'xonokai', 'xt256'];
@@ -109,6 +157,10 @@ function App() {
 
   return (
   	<StoreProvider store={store}>
+  		<StatusBar
+  			backgroundColor={primaryDark}
+  			barStyle="dark-content"
+  		/>
     	<Drawer
         ref={_drawer}
         content={
@@ -122,13 +174,12 @@ function App() {
 	            	icon: 'file-document-edit',
 	            	params: { code: '' },
 	            	onPress: () => {
-	            		AsyncStorage.removeItem('currentFile');
-	            		setCurrentFile();
+	            		addOpenFile(openFileSchema());
 	            	}
 	            },
 	            { key: 'Settings', label: 'Settings', icon: 'settings' },
-	            { key: 'Settings', label: 'About', icon: 'information' },
-	            { key: 'Settings', label: 'Help', icon: 'lifebuoy' }
+	            { key: 'About', label: 'About', icon: 'information' },
+	            { key: 'Help', label: 'Help', icon: 'lifebuoy' }
         		]}
         		onPress={navigate}
         	/>

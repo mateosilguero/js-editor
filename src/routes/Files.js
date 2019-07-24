@@ -5,14 +5,15 @@ import HeaderButton from '../components/HeaderButton';
 import Prompt from '../components/Prompt';
 import { useStoreState, useStoreActions } from 'easy-peasy';
 import { getAllFiles, readFile, mkdir, removeFile } from '../utils/FSManager';
+import { openFileSchema } from '../utils/helpers.js';
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const Files = ({ navigation, screenProps }) => {
   const { openDrawer } = screenProps;
-  const { files, currentFiles, theme: { primary }, themeColors: { highlightColor } } = useStoreState(store => store);
+  const { files, theme: { primary, maincolor }, themeColors: { highlightColor } } = useStoreState(store => store);
   const setFiles = useStoreActions(actions => actions.setFiles);
-  const setCurrentFile = useStoreActions(actions => actions.setCurrentFile);
-  //const addCurrentFile = useStoreActions(actions => actions.addCurrentFile);
+  const addOpenFile = useStoreActions(actions => actions.addOpenFile);
+  const closeOpenFile = useStoreActions(actions => actions.closeOpenFile);
   const [ currentPath, setCurrentPath ] = useState([]);
   const [ promptVisible, setPromptState ] = useState(false);
   const [ loading, setLoading ] = useState(false);
@@ -42,10 +43,9 @@ const Files = ({ navigation, screenProps }) => {
   };
 
   const newFile = () => {
-    const fname = getFName('untitled');
-    AsyncStorage.removeItem('currentFile');
-    setCurrentFile();
-    navigation.navigate('Home', { code: '' });
+    const fname = getFName('');
+    addOpenFile(openFileSchema(fname));
+    navigation.navigate('Home');
   };
 
   useEffect(() => {
@@ -85,6 +85,7 @@ const Files = ({ navigation, screenProps }) => {
           onPress: () =>
             removeFile(fname)
               .then(() => {
+                closeOpenFile(fname);
                 alert(fname + ' removed.');
                 getFiles(joinedPath);
               })
@@ -118,7 +119,8 @@ const Files = ({ navigation, screenProps }) => {
         visible={promptVisible}
         onClose={() => setPromptState(false)}
         onSubmit={(foldername) => {
-          mkdir(joinedPath+foldername)
+          const fname = getFName(foldername);
+          mkdir(fname)
             .then(() => getFiles(joinedPath))
             .catch(() =>
               alert('Error creating '+foldername)
@@ -127,10 +129,7 @@ const Files = ({ navigation, screenProps }) => {
         }}
       />
       <View 
-        style={{
-          ...styles.toolbar,
-          backgroundColor: primary
-        }}
+        style={styles.toolbar(primary)}
       >
         <Text style={styles.toolbarText}>
           / { currentPath.join(' / ') }
@@ -146,14 +145,13 @@ const Files = ({ navigation, screenProps }) => {
         renderItem={({ item: file, index }) =>
           <TouchableOpacity
             key={index}
-            style={styles.file}
+            style={styles.file(maincolor)}
             onPress={() => {
               const fname = getFName(file.name);
               if (file.isFile()) {
                 readFile(fname)
                   .then(code => {
-                    AsyncStorage.setItem('currentFile', fname);
-                    setCurrentFile(fname);
+                    addOpenFile(openFileSchema(fname, code));
                     navigation.navigate('Home', { code });
                   })
                   .catch((e) => alert('Error on open ' + fname))
@@ -182,7 +180,7 @@ const Files = ({ navigation, screenProps }) => {
             {
               loading ?
                 <ActivityIndicator size={64} color={primary} /> :
-                <>
+                <React.Fragment>
                   <Icon name='folder-open' size={52} />
                   <Text style={styles.emptyStatetext}>No Files</Text>
                   <TouchableOpacity
@@ -195,18 +193,18 @@ const Files = ({ navigation, screenProps }) => {
                       borderRadius: 2,
                       marginTop: 16
                     }}>
-                    <Text style={{ fontSize: 16, color: '#000' }}>
+                    <Text style={{ fontSize: 16, color: maincolor }}>
                       <Icon name='plus-circle-outline' size={16} /> Add new file
                     </Text>
                   </TouchableOpacity>
-                </>
+                </React.Fragment>
             }
           </View>
         }
         ListFooterComponent={
           files.length > 0 &&
             <Text style={{ textAlign: 'center', margin: 16 }}>
-              <Icon name='delete' size={16} /> Long press item to remove
+              <Icon name='delete' size={16} /> Long press to remove
             </Text>
         }
       />
@@ -253,30 +251,30 @@ Files.navigationOptions = ({ navigation, navigationOptions }) => ({
 });
 
 const styles = StyleSheet.create({
-  toolbar: {
-    height: 56,
+  toolbar: (backgroundColor) => ({
+    height: 48,
     elevation: 2,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#A7A7AA',
     flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
+    justifyContent: 'space-between',
+    backgroundColor
+  }),
   toolbarText: {
     fontSize: 18,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingTop: 14
+    textAlignVertical: 'center'
   },
-  file: {
+  file: (borderBottomColor) => ({
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 0.5,
-    borderBottomColor: '#000',
+    borderBottomColor,
     height: 56,
     paddingVertical: 4,
     paddingHorizontal: 16
-  },
+  }),
   fileName: {
     fontSize: 22
   },

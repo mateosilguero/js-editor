@@ -13,3 +13,13 @@ export function debounce(func, wait, immediate) {
     if (callNow) func.apply(context, args);
   };
 };
+
+export const openFileSchema = (
+  filename = '',
+  code = '',
+  initialState = code
+) => ({
+  filename,
+  code,
+  initialState
+});

@@ -7,7 +7,7 @@ import Shortcuts from '../components/Shortcut';
 import HeaderButton from '../components/HeaderButton';
 import { useStoreState, useStoreActions } from 'easy-peasy';
 import { saveFile, readFile } from '../utils/FSManager';
-import { debounce } from '../utils/helpers';
+import { debounce, openFileSchema } from '../utils/helpers';
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { TabView, TabBar } from 'react-native-tab-view';
 
@@ -17,24 +17,32 @@ const Home = (props) => {
     theme: {
       styles: themeStyles,
       highlighter,
-      primary
+      primary,
+      maincolor,
+      primaryDark
     },
     themeColors: {
       backgroundColor,
       color,
       highlightColor
     },
-    currentFile,
-    tabsCount,
+    currentTab,
+    openedFiles,
     codeShortcuts
   } = useStoreState(store => store);
-  const setCurrentFile = useStoreActions(actions => actions.setCurrentFile);
-  const [ code, setCode ] = useState("");
-  const [ codeHistory, setCodeHistory ] = useState([""]);
+  const  {
+    setOpenedFiles,
+    setCurrentTab,
+    closeOpenFile
+  } = useStoreActions(actions => actions);
+  const [ codeHistory, setCodeHistory ] = useState([]);
   const [ isEditing, setIsEditing ] = useState(false);
   const [ promptVisible, setPromptState ] = useState(false);
   const [ selection, setSelection ] = useState({ start: 0, end: 0 });
   const inputEl = useRef(null);
+
+  const { code = '', filename: currentFile = ''} = openedFiles[currentTab] || {};
+  const splitedCode = code.split('\n');
 
   useEffect(() => {
     if (inputEl && inputEl.current) {
@@ -54,18 +62,42 @@ const Home = (props) => {
     }
   }, [selection])
 
+  const safeSetCode = (code, replaceInitialState, newName) => {
+    const op = [ ...openedFiles ];
+    const {
+      filename,
+      code: oldCode,
+      initialState
+    } = (op[currentTab] || {});
+    op[currentTab] = openFileSchema(
+      newName || filename,
+      code,
+      replaceInitialState ? code : initialState
+    )
+    setOpenedFiles(op);
+  }
+
   const exec = async () => {
     try {
       setIsEditing(false);
       Keyboard.dismiss();
-      let regex = /(\/\/ *)?(use\(.+\);?)/g;
+      let regex = /(\/\/ *)?(import ?.+;?)/g;
       let importedCode = await Promise.all(
         (code.match(regex) || [])
           .filter(x => !x.includes('//'))
-          .map(s => eval(s))
-      ).then(filescode => filescode.join('\n'));
-      const codeWithoutImports = code.split('\n').filter(s => !s.includes('use(')).join('\n');
-      eval(importedCode + '\n' + codeWithoutImports);
+          .map(s => {
+            const exec = /(import ?['"](.+)['"];?)/g.exec(s);
+            const filename = exec && exec[2];
+            if (filename) {
+              const f = openedFiles.find(o => o.filename === filename);
+              return f ? f.code : readFile(filename);
+            }
+          })
+      ).then(filescode =>
+        filescode.join('\n') + (filescode.length ? '\n' : '')
+      );
+      const codeWithoutImports = splitedCode.filter(s => !s.includes('import')).join('\n');
+      eval(importedCode + codeWithoutImports);
       navigation.navigate('Console');      
     } catch (e) {
       const match = e.stack.match(/<anonymous>:\d+:\d+/g);
@@ -73,28 +105,80 @@ const Home = (props) => {
       Alert.alert(
         e.name,
         `${e.message} \nline: ${line}, position: ${position}`,
-        [
-          {
-            text: 'CANCEL',
-            style: 'cancel',
-          }
-        ],
+        [{ text: 'CANCEL', style: 'cancel' }],
         { cancelable: false }
       );
     }
   }
 
-  const comment = () => {
-    if (inputEl && inputEl.current && inputEl.current._lastNativeSelection) {
+  useEffect(() => {
+    Keyboard.addListener(
+      'keyboardDidHide',
+      () => setIsEditing(false),
+    );
+    return () => {
+      Keyboard.removeListener('keyboardDidHide')
+    }; 
+  }, [false]);
+
+  useEffect(() => {
+    navigation.setParams({
+      exec,
+      comment: () => insertText(undefined, 'comment'),
+      highlightColor,
+      maincolor,
+      undo,
+      save: () => setPromptState(true),
+      saveAll,
+      isEditing,
+      hasHistory: codeHistory[currentTab] && codeHistory[currentTab].length > 0
+    });
+  }, [highlightColor, code, codeHistory, openedFiles, isEditing, inputEl]);
+
+  const saveAll = () =>
+    setOpenedFiles(
+      openedFiles.map((o, i) => {
+        if (o.filename) {
+          saveFile(o.filename, o.code);
+          return openFileSchema(
+            o.filename,
+            o.code
+          )
+        } else {
+          setCurrentTab(i);
+          setPromptState(true);
+          return o;
+        }
+      })
+    );
+
+  const undo = () => {        
+    const history = [ ...codeHistory ];
+    const prevHistory = history[currentTab];
+    if (prevHistory && prevHistory.length) {
+      const historyCopy = [ ...prevHistory ];
+      safeSetCode(historyCopy.shift())
+      history[currentTab] = historyCopy;
+      setCodeHistory(history);
+    }
+  }
+
+  const insertText = (key = '', mode) => {
+    if (
+      inputEl &&
+      inputEl.current &&
+      inputEl.current._lastNativeSelection &&
+      isEditing
+    ) {
       const { start, end } = inputEl.current._lastNativeSelection;
-      let initialRow = code.substring(0, start).split("\n").length - 1;    
-      let finalRow = code.substring(start, end).split("\n").length - 1 + initialRow;
-      let newCode = code
-        .split("\n")
-        .map((l, i) => {
+      let newcode, position;
+      if (mode === 'comment') {
+        let initialRow = code.substring(0, start).split("\n").length - 1;    
+        let finalRow = code.substring(start, end).split("\n").length - 1 + initialRow;
+        newcode = splitedCode.map((l, i) => {
           if (i >= initialRow && i <= finalRow) {
-            if (l.includes('//')) {
-              const match = /(\/\/ *)?/g.exec(l);
+            if (/^(\/\/ *)/g.test(l)) {
+              const match = /^(\/\/ *)?/g.exec(l);
               l = l.substring(match[1].length);
             } else {
               l = '// ' + l
@@ -102,73 +186,41 @@ const Home = (props) => {
           }
           return l;
         }).join('\n');
-      limitAndSetHistory(code);
-      setCode(newCode);    
-      setSelection({ start, end });
-    }
-  }
-
-  useEffect(() => {
-    const c = navigation.getParam('code');
-    if (c !== undefined) {
-      setCode(c);
-      setCodeHistory([c]);
-    }
-    Keyboard.addListener(
-      'keyboardDidHide',
-      () => setIsEditing(false),
-    );
-    return () => {
-       Keyboard.removeListener('keyboardDidHide')
-    }; 
-  }, [navigation.getParam('code')]);
-
-  useEffect(() => {
-    navigation.setParams({
-      exec,
-      comment,
-      highlightColor,
-      undo: () => {
-        if (codeHistory.length) {
-          const historyCopy = [ ...codeHistory ];
-          setCode(historyCopy.shift())
-          setCodeHistory(historyCopy);
+        position = {  start, end };
+      } else {
+        newcode = code.substring(0, start) + key + code.substring(end);
+        position = {
+          start: end + key.length - Math.floor(key.length/2)
         }
-      },
-      save: () => setPromptState(true)
-    });
-  }, [highlightColor, code, inputEl, codeHistory]);  
-
-  const insertKey = (key = "") => {
-    if (inputEl && inputEl.current && inputEl.current._lastNativeSelection) {
-      const { start, end } = inputEl.current._lastNativeSelection;
-      if (isEditing) {
-        const newcode = code.substring(0, start) + key + code.substring(end);
-        let position = end + key.length - Math.floor(key.length/2);
-        limitAndSetHistory(code);
-        setCode(newcode);
-        setSelection({ start: position });
-      }
+      }      
+      limitAndSetHistory(code);
+      safeSetCode(newcode);  
+      setSelection(position);
     }
   }
 
   const limitAndSetHistory = (newElement) => {
-    var h = [
+    const history = [ ...codeHistory ];
+    const prevHistory = history[currentTab] || [];
+    const h = [
       newElement,
-      ...codeHistory.slice(0, 9)      
+      ...prevHistory.slice(0, 9)      
     ];
-    setCodeHistory(h);
+    history[currentTab] = h;
+    setCodeHistory(history);
   }
 
   const debouncedHistory = debounce(function(code) {
     limitAndSetHistory(code);
   }, 500);
 
+  const hasChanged = (title) => {
+    const file = openedFiles.find(op => op.filename === title);
+    return file.code !== file.initialState ? '*' : '';
+  }
+
   return (
-    <View style={{
-      ...styles.container,
-      backgroundColor
-    }}>    
+    <View style={styles.container(backgroundColor)}>    
       <Prompt
         title="Save as:"
         placeholder="Start typing"
@@ -176,34 +228,33 @@ const Home = (props) => {
         visible={promptVisible}
         onClose={() => setPromptState(false)}
         onSubmit={(filename) => {
-          if (filename !== currentFile) {
-            setCurrentFile(filename);
-          }
           saveFile(filename, code);
+          safeSetCode(code, true, filename);
           setPromptState(false);
-          navigation.navigate('Home', { code });
         }}
       />
       <TabView
         navigationState={{
-          index: 0,
-          routes: [(currentFile || "untitled")].map(c => ({ key: c, title: c }))
+          index: currentTab,
+          routes: openedFiles.map((c, i) => ({
+            key: i,
+            title: c.filename
+          }))
         }}
         renderScene={() => null}
-        onIndexChange={index => console.log(index)}
+        onIndexChange={index => {
+          setCurrentTab(index);
+        }}
         sceneContainerStyle={{ height: 0, flex: 1 }}
         style={{ maxHeight: 48 }}
         renderTabBar={props =>
           <TabBar
             {...props}
             scrollEnabled
-            onTabLongPress={console.log}
+            onTabLongPress={({ route }) => closeOpenFile(route.title)}
             indicatorStyle={{
               backgroundColor: highlightColor,
-              height: 6
-            }}
-            tabStyle={{
-              width: Dimensions.get('window').width / tabsCount
+              height: 3
             }}
             style={{
               backgroundColor: primary,
@@ -212,12 +263,12 @@ const Home = (props) => {
             renderLabel={({ route, focused }) => (
               <Text
                 style={{
-                  color: '#000',
+                  color: maincolor,
                   fontSize: 18,
                   fontWeight: 'bold'
                 }}
               >
-                {route.title}{code !== navigation.getParam('code') ? '*' : ''}
+                {route.title || 'untitled'}{hasChanged(route.title)}
               </Text>
             )}
           />
@@ -233,15 +284,11 @@ const Home = (props) => {
         }}>
           <View style={{ paddingTop: 8, backgroundColor }}>
             {
-              code.split('\n')
+              splitedCode
                 .map((t, i) =>
                   <Text
                     key={i}
-                    style={{
-                      ...styles.codeIndex,
-                      backgroundColor,
-                      color
-                    }}
+                    style={styles.codeIndex(backgroundColor, color)}
                   >
                     {i + 1}
                   </Text>
@@ -250,28 +297,19 @@ const Home = (props) => {
           </View>
           <ScrollView horizontal>
             {
-              (isEditing || !code) ?
-                <View style={{
-                  ...styles.inputView,
-                  backgroundColor,
-                  overflow: 'visible'
-                }}>
+              isEditing ?
+                <View style={styles.inputView(backgroundColor)}>
                   <TextInput
-                    style={{
-                      ...styles.input,
-                      backgroundColor,
-                      color,
-                      overflow: 'scroll'
-                    }}
+                    style={styles.input(backgroundColor, color)}
                     ref={inputEl}
                     multiline
                     textBreakStrategy="balanced"
                     textAlignVertical={"top"}
                     autoFocus
                     autoCapitalize="none"
-                    onChangeText={(code) => {
-                      setCode(code);
+                    onChangeText={(c) => {
                       debouncedHistory(code);
+                      safeSetCode(c);                      
                     }}
                     onBlur={() => {
                       setIsEditing(false);
@@ -299,7 +337,7 @@ const Home = (props) => {
       </ScrollView>
       <Shortcuts
         color={color}
-        onPress={insertKey}
+        onPress={insertText}
         actions={codeShortcuts}
       />
     </View>
@@ -309,34 +347,45 @@ const Home = (props) => {
 Home.navigationOptions = ({ navigation, screenProps: { openDrawer } }) => {
   const highlightColor = navigation.getParam('highlightColor');
   return ({
-    title: 'JSeditor',
+    title: 'JS',
     headerRight: (
       <View style={{ flex: 1, flexDirection: 'row' }}>
         <HeaderButton
           underlayColor={highlightColor}
+          disabled={!navigation.getParam('isEditing')}
           onPress={navigation.getParam('comment')}
           name="format-quote-close"
           style={{ marginLeft: 8 }}
         />
         <HeaderButton
           underlayColor={highlightColor}
+          disabled={
+            !navigation.getParam('isEditing') ||
+            !navigation.getParam('hasHistory')
+          }
           onPress={navigation.getParam('undo')}
           name="undo"
           style={{ marginLeft: 8 }}
         />
         <OptionsMenu
           customButton={
-            <Icon name="dots-vertical" size={28} style={{ margin: 8 }} />
+            <Icon
+              name="dots-vertical"
+              size={28}
+              style={{ margin: 8, color: navigation.getParam('maincolor') }}
+            />
           }
           options={[
             "Run",
+            "Console",
             "Save",
-            "Console"
+            "Save All"            
           ]}
           actions={[
             navigation.getParam('exec'),
+            () => navigation.push('Console'),
             navigation.getParam('save'),
-            () => navigation.push('Console')
+            navigation.getParam('saveAll')            
           ]}/>
       </View>
     ),
@@ -352,32 +401,39 @@ Home.navigationOptions = ({ navigation, screenProps: { openDrawer } }) => {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: (backgroundColor) => ({
     flex: 1,
-    justifyContent: 'center'
-  },
+    justifyContent: 'center',
+    backgroundColor
+  }),
   filename: {
     fontSize: 18,
     textAlign: 'center',
     paddingVertical: 8
   },
-  inputView: {
-    backgroundColor: 'rgba(0,0,0,0)',
-    flex: 1
-  },
-  input: {
+  inputView: (backgroundColor) => ({
+    backgroundColor,
+    flex: 1,
+    overflow: 'visible'
+  }),
+  input: (backgroundColor, color) => ({
     padding: 8,
     fontSize: 16,
     lineHeight: 22,
     fontFamily: Platform.OS === 'ios' ? 'Menlo-Regular' : 'monospace',
-    width: '100%'
-  },
-  codeIndex: {
+    width: '100%',
+    overflow: 'scroll',
+    backgroundColor,
+    color
+  }),
+  codeIndex: (backgroundColor, color) => ({
     paddingHorizontal: 8,
     fontSize: 15,
     lineHeight: 22,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo-Regular' : 'monospace'
-  }
+    fontFamily: Platform.OS === 'ios' ? 'Menlo-Regular' : 'monospace',
+    backgroundColor,
+    color
+  })
 });
 
 export default Home;

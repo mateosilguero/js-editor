@@ -37,7 +37,3 @@ export const getAllFiles = (path) =>
 	  .catch((err) => {
 	    console.log(err.message, err.code);
 	  });
-
-window.use = function (url) {
-	return readFile(url);
-}

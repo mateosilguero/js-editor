@@ -14,15 +14,9 @@ const DrawerContent = ({ menuItems, onPress }) => {
   } = useStoreState(store => store);
   return(
 		<View
-			style={{ 
-				...styles.container,
-				backgroundColor,
-				borderRightRadius: 4,
-		    borderRightWidth: 0.5,
-		    borderRightColor: color
-		  }}
+			style={styles.container(backgroundColor, color)}
 		>
-			<Text style={{ ...styles.title, color: maincolor, backgroundColor: primary }}>
+			<Text style={styles.title(maincolor, primary)}>
 				JS
 			</Text>
 			<View style={{ padding: 16 }}>
@@ -47,17 +41,25 @@ const DrawerContent = ({ menuItems, onPress }) => {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1
-  },
-  title: {
+  container: (backgroundColor, color) => ({
+    flex: 1,
+    backgroundColor,
+    borderRightRadius: 4,
+    borderRightWidth: 0.5,
+    borderRightColor: color
+  }),
+  title: (color, backgroundColor) => ({
     paddingVertical: 12,
     paddingHorizontal: 16,
     fontSize: 24,
-    height: 56,
+    height: 104,
     fontWeight: 'bold',
-    elevation: 3
-  },
+    elevation: 3,
+    textAlign: 'right',
+    textAlignVertical: 'bottom',
+    color,
+    backgroundColor
+  }),
   menuItem: {
   	height: 48,
   	flexDirection: 'row'

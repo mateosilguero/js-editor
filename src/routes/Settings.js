@@ -67,6 +67,26 @@ const Settings = ({ navigation, screenProps }) => {
         }}>
           Shortcuts:
         </Text>*/}
+        <Text style={{
+          ...styles.title,
+          backgroundColor: theme.primary
+        }}>
+          Language:
+        </Text>
+        <Picker
+          style={styles.picker}
+          mode="dialog"
+          onValueChange={console.log}
+        >
+            <Picker.Item
+              label={"es"}
+              value={"es"}
+            />
+            <Picker.Item
+              label={"en"}
+              value={"en"}
+            />
+        </Picker>
     </View>
   );
 }
@@ -89,9 +109,12 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   title: {
+    height: 48,
+    elevation: 2,
     fontSize: 18,
-    padding: 16,
-    color: '#000'
+    paddingHorizontal: 16,
+    color: '#000',
+    textAlignVertical: 'center'
   },
   picker: {
     height: 50,

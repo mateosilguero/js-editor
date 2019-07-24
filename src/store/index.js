@@ -4,34 +4,48 @@ import themes from '../utils/themes';
 
 const storeModel = {
 	files: [],
-	currentFile: null,
 	openedFiles: [],
 	currentTab: 0,
-	tabsCount: computed(state => {
-		const { currentFiles } = state;
-		return currentFiles.length > 3 ? 3 : (currentFiles.length || 1);
-	}),
 	setFiles: action((state, payload) => {
     state.files = payload;
-  }),
-  setCurrentFile: action((state, payload) => {
-    state.currentFile = payload;
   }),
   setOpenedFiles: action((state, payload) => {
     state.openedFiles = payload;
   }),
-  setCurrentTab: action((state, payload) => {
+  setCurrentTab: action((state, payload) => {  	
     state.currentTab = payload;
   }),
   addOpenFile: action((state, payload) => {
-  	let index = state.openedFiles.indexOf(n => n.filename === payload.filename);
+  	let index = state.openedFiles.map(n => n.filename).indexOf(payload.filename);
   	if (index < 0) {
   		state.openedFiles = [ ...state.openedFiles, payload ];
   		state.currentTab = state.openedFiles.length - 1;
-  		AsyncStorage.setItem('openedFiles', JSON.stringify(state.openedFiles));
+  		AsyncStorage.setItem(
+  			'openedFiles',
+  			JSON.stringify(
+  				state.openedFiles
+  					.map(o => o.filename)
+  					.filter(n => n && n != 'untitled')
+  				)
+  		);
   	} else {
   		state.currentTab = index;
   	} 	
+  }),
+  closeOpenFile: action((state, payload) => {
+  	let index = state.openedFiles.map(n => n.filename).indexOf(payload);
+  	if (index >= 0) {
+  		state.openedFiles.splice(index, 1);
+  		state.currentTab = (index || 1) - 1;
+  		AsyncStorage.setItem(
+  			'openedFiles',
+  			JSON.stringify(
+  				state.openedFiles
+  					.map(o => o.filename)
+  					.filter(n => n && n != 'untitled')
+  				)
+  		);
+  	}
   }),
   logs: [],
   log: action((state, payload) => {
@@ -66,7 +80,8 @@ const storeModel = {
   }),
   theme: {
 		primary: '#ffe45e',
-		maincolor: '#000',
+		primaryDark: '#fdd835',
+		maincolor: '#222',
 		styles: themes['hljs']['obsidian'],
 		highlighter: 'hljs',
 		selectedTheme: 'tomorrow',

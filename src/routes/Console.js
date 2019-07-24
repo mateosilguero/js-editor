@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, ScrollView } from 'react-native';
+import { StyleSheet, View, ScrollView, Text } from 'react-native';
 import SyntaxHighlighter from 'react-native-syntax-highlighter';
 import HeaderButton from '../components/HeaderButton';
 import { useStoreState, useStoreActions } from 'easy-peasy';
 
 const Console = ({ navigation }) => {
-  const { logs, theme, themeColors: { highlightColor, backgroundColor } } = useStoreState(store => store);
+  const { logs, theme, themeColors: { highlightColor, backgroundColor, color } } = useStoreState(store => store);
   const clearLogs = useStoreActions(actions => actions.clearLogs);
 
   useEffect(() => {
@@ -16,19 +16,13 @@ const Console = ({ navigation }) => {
   }, [highlightColor]);
 
   return (
-    <View style={{
-      ...styles.container,
-      backgroundColor
-    }}>
+    <View style={styles.container(backgroundColor)}>
       <ScrollView
         ref={ ref => this.flatList = ref }
         onContentSizeChange={() => this.flatList.scrollToEnd({animated: true})}
         onLayout={() => this.flatList.scrollToEnd({animated: true})}
       >
-        <View style={{
-          ...styles.inputView,
-          backgroundColor
-        }}>
+        <View style={styles.logsView(backgroundColor)}>
           <SyntaxHighlighter 
             language='javascript' 
             style={theme.styles}
@@ -37,7 +31,12 @@ const Console = ({ navigation }) => {
           >
             {
               logs
-                .map(s => `> ${JSON.stringify(s, null, 2)}`)
+                .map(s =>
+                  `> ${
+                    s && typeof s === 'object' ?
+                      '\n' : ''
+                  }${JSON.stringify(s, null, 2)}`
+                )
                 .join('\n')
             }
           </SyntaxHighlighter>
@@ -60,14 +59,17 @@ Console.navigationOptions = ({ navigation }) => ({
 });
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center'
-  },
-  inputView: {
+  container: (backgroundColor) => ({
+    flex: 1,    
+    justifyContent: 'center',
+    backgroundColor
+  }),
+  logsView: (backgroundColor) => ({
     backgroundColor: 'rgba(0,0,0,0)',
-    flex: 1
-  }
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor
+  })
 });
 
 export default Console;
