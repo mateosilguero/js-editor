@@ -2,18 +2,18 @@ import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { useStoreState } from 'easy-peasy';
 
-const SplashScreen = ({ navigation }) => {
+const SplashScreen = () => {
 	const {
     primary,
-    maincolor
-  } = useStoreState(store => store.theme);
+    textcolor
+  } = useStoreState(store => store.preferences.theme);
 
   return (
 	  <View
 	  	style={styles.container(primary)}
 	  >
 	  	<Text
-	  		style={styles.title(maincolor)}
+	  		style={styles.title(textcolor)}
 	  	>
 	  		JS
 	  	</Text>

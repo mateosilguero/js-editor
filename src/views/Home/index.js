@@ -1,40 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Platform, StyleSheet, Text, View, TextInput, TouchableHighlight, ScrollView, Keyboard, Alert, Dimensions } from 'react-native';
-import SyntaxHighlighter from 'react-native-syntax-highlighter';
-import OptionsMenu from "react-native-options-menu";
-import Prompt from '../components/Prompt';
-import Shortcuts from '../components/Shortcut';
-import HeaderButton from '../components/HeaderButton';
+import { Text, View, TextInput, TouchableHighlight, ScrollView, Keyboard, Alert } from 'react-native';
 import { useStoreState, useStoreActions } from 'easy-peasy';
-import { saveFile, readFile } from '../utils/FSManager';
-import { debounce, openFileSchema } from '../utils/helpers';
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { TabView, TabBar } from 'react-native-tab-view';
+import Prompt from '../../components/Prompt';
+import Shortcuts from '../../components/Shortcut';
+import Code from '../../components/Code';
+import Tabs from '../../components/Tabs';
+import { saveFile, readFile } from '../../utils/FSManager';
+import { debounce, openFileSchema } from '../../utils/helpers';
+import styles from './styles.js';
+import navigationOptions from './navigationOptions.js';
+import { t } from '../../i18n';
 
-const Home = (props) => {
-  const { navigation } = props;
+const Home = ({ navigation }) => {
   const {
-    theme: {
-      styles: themeStyles,
-      highlighter,
-      primary,
-      maincolor,
-      primaryDark
-    },
+    theme: { textcolor },
     themeColors: {
       backgroundColor,
-      color,
-      highlightColor
+      color
     },
-    currentTab,
-    openedFiles,
     codeShortcuts
-  } = useStoreState(store => store);
+  } = useStoreState(store => store.preferences);
+  const {
+    currentTab,
+    openedFiles
+  } = useStoreState(store => store.files);
   const  {
     setOpenedFiles,
     setCurrentTab,
-    closeOpenFile
-  } = useStoreActions(actions => actions);
+    addOpenFile
+  } = useStoreActions(actions => actions.files);
   const [ codeHistory, setCodeHistory ] = useState([]);
   const [ isEditing, setIsEditing ] = useState(false);
   const [ promptVisible, setPromptState ] = useState(false);
@@ -66,7 +60,6 @@ const Home = (props) => {
     const op = [ ...openedFiles ];
     const {
       filename,
-      code: oldCode,
       initialState
     } = (op[currentTab] || {});
     op[currentTab] = openFileSchema(
@@ -77,28 +70,45 @@ const Home = (props) => {
     setOpenedFiles(op);
   }
 
+  const asyncStringReplace = (str, regex, aReplacer) => {
+    let match = regex.exec(str);
+    if (match) {
+      str = str
+        .split(match[0])
+        .filter(x => x)
+        .join("")
+        .trim();
+      return aReplacer(...match).then(res => res + "\n" + str)
+    }
+    return "";
+  };
+
+  const replaceIncludePlaceholdersWithFileContents = async str => {
+    if (str.includes("import")) {
+      const placeholderRe = /(\/\/ *)?import ?['"]*(.*)['"];*/g;
+      const replacedCode = await asyncStringReplace(
+        str,
+        placeholderRe,
+        (placeholder, isCommented, filename) => {
+          if (isCommented) {
+            return Promise.resolve("");
+          }
+          const f = openedFiles.find(o => o.filename === filename);
+          return f ? Promise.resolve(f.code) : readFile(filename);
+        }
+      );
+      return await replaceIncludePlaceholdersWithFileContents(replacedCode);
+    }
+    return str;
+  };
+
   const exec = async () => {
     try {
       setIsEditing(false);
       Keyboard.dismiss();
-      let regex = /(\/\/ *)?(import ?.+;?)/g;
-      let importedCode = await Promise.all(
-        (code.match(regex) || [])
-          .filter(x => !x.includes('//'))
-          .map(s => {
-            const exec = /(import ?['"](.+)['"];?)/g.exec(s);
-            const filename = exec && exec[2];
-            if (filename) {
-              const f = openedFiles.find(o => o.filename === filename);
-              return f ? f.code : readFile(filename);
-            }
-          })
-      ).then(filescode =>
-        filescode.join('\n') + (filescode.length ? '\n' : '')
-      );
-      const codeWithoutImports = splitedCode.filter(s => !s.includes('import')).join('\n');
-      eval(importedCode + codeWithoutImports);
-      navigation.navigate('Console');      
+      const codeToExecute = await replaceIncludePlaceholdersWithFileContents(code);
+      eval(codeToExecute);
+      navigation.navigate('Console');
     } catch (e) {
       const match = e.stack.match(/<anonymous>:\d+:\d+/g);
       const [ _, line = 0, position = 0 ] = (match && match[0] || '').split(':');
@@ -119,21 +129,20 @@ const Home = (props) => {
     return () => {
       Keyboard.removeListener('keyboardDidHide')
     }; 
-  }, [false]);
+  }, []);
 
   useEffect(() => {
     navigation.setParams({
       exec,
-      comment: () => insertText(undefined, 'comment'),
-      highlightColor,
-      maincolor,
+      comment: () => insertText('comment'),
+      textcolor,
       undo,
       save: () => setPromptState(true),
       saveAll,
       isEditing,
       hasHistory: codeHistory[currentTab] && codeHistory[currentTab].length > 0
     });
-  }, [highlightColor, code, codeHistory, openedFiles, isEditing, inputEl]);
+  }, [code, codeHistory, openedFiles, isEditing, inputEl]);
 
   const saveAll = () =>
     setOpenedFiles(
@@ -152,7 +161,7 @@ const Home = (props) => {
       })
     );
 
-  const undo = () => {        
+  const undo = () => {
     const history = [ ...codeHistory ];
     const prevHistory = history[currentTab];
     if (prevHistory && prevHistory.length) {
@@ -163,7 +172,7 @@ const Home = (props) => {
     }
   }
 
-  const insertText = (key = '', mode) => {
+  const insertText = async (key = '') => {
     if (
       inputEl &&
       inputEl.current &&
@@ -172,7 +181,7 @@ const Home = (props) => {
     ) {
       const { start, end } = inputEl.current._lastNativeSelection;
       let newcode, position;
-      if (mode === 'comment') {
+      if (key === 'comment') {
         let initialRow = code.substring(0, start).split("\n").length - 1;    
         let finalRow = code.substring(start, end).split("\n").length - 1 + initialRow;
         newcode = splitedCode.map((l, i) => {
@@ -194,7 +203,7 @@ const Home = (props) => {
         }
       }      
       limitAndSetHistory(code);
-      safeSetCode(newcode);  
+      await safeSetCode(newcode);  
       setSelection(position);
     }
   }
@@ -214,74 +223,28 @@ const Home = (props) => {
     limitAndSetHistory(code);
   }, 500);
 
-  const hasChanged = (title) => {
-    const file = openedFiles.find(op => op.filename === title);
-    return file.code !== file.initialState ? '*' : '';
-  }
-
   return (
     <View style={styles.container(backgroundColor)}>    
       <Prompt
-        title="Save as:"
-        placeholder="Start typing"
+        title={t('file_prompt_title')}
+        placeholder=".js"
         defaultValue={currentFile || '.js'}
         visible={promptVisible}
         onClose={() => setPromptState(false)}
         onSubmit={(filename) => {
           saveFile(filename, code);
           safeSetCode(code, true, filename);
+          addOpenFile(openFileSchema(filename));
           setPromptState(false);
         }}
       />
-      <TabView
-        navigationState={{
-          index: currentTab,
-          routes: openedFiles.map((c, i) => ({
-            key: i,
-            title: c.filename
-          }))
-        }}
-        renderScene={() => null}
-        onIndexChange={index => {
-          setCurrentTab(index);
-        }}
-        sceneContainerStyle={{ height: 0, flex: 1 }}
-        style={{ maxHeight: 48 }}
-        renderTabBar={props =>
-          <TabBar
-            {...props}
-            scrollEnabled
-            onTabLongPress={({ route }) => closeOpenFile(route.title)}
-            indicatorStyle={{
-              backgroundColor: highlightColor,
-              height: 3
-            }}
-            style={{
-              backgroundColor: primary,
-              height: 48
-            }}
-            renderLabel={({ route, focused }) => (
-              <Text
-                style={{
-                  color: maincolor,
-                  fontSize: 18,
-                  fontWeight: 'bold'
-                }}
-              >
-                {route.title || 'untitled'}{hasChanged(route.title)}
-              </Text>
-            )}
-          />
-        }
-      />
+      <Tabs
+        currentTab={currentTab}
+        openedFiles={openedFiles}
+        setCurrentTab={setCurrentTab}
+      />      
       <ScrollView>
-        <View style={{
-          flex: 1,
-          flexDirection: 'row',
-          borderTopRadius: 4,
-          borderTopWidth: 0.5,
-          borderTopColor: color
-        }}>
+        <View style={styles.codeContainer(color)}>
           <View style={{ paddingTop: 8, backgroundColor }}>
             {
               splitedCode
@@ -322,14 +285,9 @@ const Home = (props) => {
                   style={styles.inputView}
                   onPress={() => setIsEditing(true)}
                 >
-                  <SyntaxHighlighter 
-                    language='javascript' 
-                    style={themeStyles}
-                    fontSize={17}
-                    highlighter={highlighter}                
-                  >
+                  <Code>
                     {code}
-                  </SyntaxHighlighter>
+                  </Code>
                 </TouchableHighlight>
             }
           </ScrollView>
@@ -344,96 +302,6 @@ const Home = (props) => {
   );
 }
 
-Home.navigationOptions = ({ navigation, screenProps: { openDrawer } }) => {
-  const highlightColor = navigation.getParam('highlightColor');
-  return ({
-    title: 'JS',
-    headerRight: (
-      <View style={{ flex: 1, flexDirection: 'row' }}>
-        <HeaderButton
-          underlayColor={highlightColor}
-          disabled={!navigation.getParam('isEditing')}
-          onPress={navigation.getParam('comment')}
-          name="format-quote-close"
-          style={{ marginLeft: 8 }}
-        />
-        <HeaderButton
-          underlayColor={highlightColor}
-          disabled={
-            !navigation.getParam('isEditing') ||
-            !navigation.getParam('hasHistory')
-          }
-          onPress={navigation.getParam('undo')}
-          name="undo"
-          style={{ marginLeft: 8 }}
-        />
-        <OptionsMenu
-          customButton={
-            <Icon
-              name="dots-vertical"
-              size={28}
-              style={{ margin: 8, color: navigation.getParam('maincolor') }}
-            />
-          }
-          options={[
-            "Run",
-            "Console",
-            "Save",
-            "Save All"            
-          ]}
-          actions={[
-            navigation.getParam('exec'),
-            () => navigation.push('Console'),
-            navigation.getParam('save'),
-            navigation.getParam('saveAll')            
-          ]}/>
-      </View>
-    ),
-    headerLeft: (
-      <HeaderButton
-        underlayColor={highlightColor}
-        onPress={openDrawer}
-        name="menu"
-        style={{ marginLeft: 8 }}
-      />
-    )
-  });
-}
-
-const styles = StyleSheet.create({
-  container: (backgroundColor) => ({
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor
-  }),
-  filename: {
-    fontSize: 18,
-    textAlign: 'center',
-    paddingVertical: 8
-  },
-  inputView: (backgroundColor) => ({
-    backgroundColor,
-    flex: 1,
-    overflow: 'visible'
-  }),
-  input: (backgroundColor, color) => ({
-    padding: 8,
-    fontSize: 16,
-    lineHeight: 22,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo-Regular' : 'monospace',
-    width: '100%',
-    overflow: 'scroll',
-    backgroundColor,
-    color
-  }),
-  codeIndex: (backgroundColor, color) => ({
-    paddingHorizontal: 8,
-    fontSize: 15,
-    lineHeight: 22,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo-Regular' : 'monospace',
-    backgroundColor,
-    color
-  })
-});
+Home.navigationOptions = navigationOptions;
 
 export default Home;

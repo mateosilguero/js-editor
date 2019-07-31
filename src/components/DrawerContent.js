@@ -5,18 +5,18 @@ import { useStoreState } from 'easy-peasy';
 
 const DrawerContent = ({ menuItems, onPress }) => {
 	const {
-    theme: { primary, maincolor },
+    theme: { primary, textcolor },
     themeColors: {
       backgroundColor,
       color,
       highlightColor
     }
-  } = useStoreState(store => store);
+  } = useStoreState(store => store.preferences);
   return(
 		<View
 			style={styles.container(backgroundColor, color)}
 		>
-			<Text style={styles.title(maincolor, primary)}>
+			<Text style={styles.title(textcolor, primary)}>
 				JS
 			</Text>
 			<View style={{ padding: 16 }}>

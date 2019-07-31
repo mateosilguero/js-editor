@@ -9,36 +9,38 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
-import { createStackNavigator, createAppContainer, createSwitchNavigator, NavigationActions, StackActions } from 'react-navigation';
+import { createStackNavigator, createAppContainer, NavigationActions, StackActions } from 'react-navigation';
 import { fromRight } from 'react-navigation-transitions';
 import Drawer from 'react-native-drawer';
-import SplashScreen from './routes/SplashScreen';
-import Home from './routes/Home';
-import Console from './routes/Console';
-import Settings from './routes/Settings';
-import Files from './routes/Files';
-import About from './routes/About';
-import Help from './routes/Help';
+import SplashScreen from './views/SplashScreen';
+import Home from './views/Home';
+import Console from './views/Console';
+import Settings from './views/Settings';
+import Files from './views/Files';
+import About from './views/About';
+import Help from './views/Help';
 import DrawerContent from './components/DrawerContent';
 import { StoreProvider, createStore } from 'easy-peasy';
 import storeModel from './store';
 import themes from './utils/themes';
 import { openFileSchema } from './utils/helpers.js';
 import { readFile } from './utils/FSManager';
+import { t } from './i18n';
 
 const store = createStore(storeModel);
 
 var oldLog = console.log;
 console.log = function (message) {
+	const log = store.getActions().audit.log;
   Object.values(arguments)
     .forEach(m => 
     	//null
-    	store.getActions().log(m)
+    	log(m)
    	)
   oldLog.apply(console, arguments);
 }
 
-const { primary, primaryDark, maincolor } = store.getState().theme;
+const { primary, primaryDark, textcolor } = store.getState().preferences.theme;
 
 const MainNavigator = createStackNavigator({
 	SplashScreen: { screen: SplashScreen },
@@ -56,7 +58,7 @@ const MainNavigator = createStackNavigator({
     headerStyle: {
       backgroundColor: primary,
     },
-    headerTintColor: maincolor,
+    headerTintColor: textcolor,
     headerTitleStyle: {
       fontWeight: 'bold',
     },
@@ -68,9 +70,9 @@ const Navigator = createAppContainer(MainNavigator);
 function App() {
 	const _navigator = useRef(null);
 	const _drawer = useRef(null);
-	const setTheme = store.getActions().setTheme;
-	const addOpenFile = store.getActions().addOpenFile;
-	const setOpenedFiles = store.getActions().setOpenedFiles;
+	const [_, updateDrawerContent] = useState('');
+	const { setTheme, setLocale } = store.getActions().preferences;
+	const { addOpenFile, setOpenedFiles } = store.getActions().files;
 
   const navigate = (routeName, params = {}) => {
 	  _navigator.current.dispatch(
@@ -91,22 +93,28 @@ function App() {
 		AsyncStorage.multiGet([
 			'theme',
 			'highlighter',
-			'openedFiles'
+			'openedFiles',
+			'locale'
 		])
 			.then(array => {
 				const {
-					theme: t,
+					theme,
 					highlighter,
-					openedFiles
+					openedFiles,
+					locale
 				} = (array || []).reduce((acc, [ key, value ]) => ({
 					...acc,
 					[key]: value
 				}), {});				
 				setTheme({
-					selectedTheme: t || 'obsidian',
+					selectedTheme: theme || 'obsidian',
 					highlighter: highlighter || 'hljs'
 				});
 				const opf = JSON.parse(openedFiles);
+				if (locale) {
+					setLocale(locale);
+					updateDrawerContent(locale);
+				}
 	      if (opf && opf.length > 0) {
 	      	Promise.all(
 	      		opf.map((f, i) =>
@@ -166,25 +174,25 @@ function App() {
         content={
         	<DrawerContent
         		menuItems={[
-        			{ key: 'Home', label: 'Code', icon: 'code-tags' },
-        			{ key: 'Files', label: 'Files', icon: 'file-document-box' },
+        			{ key: 'Home', label: t('code'), icon: 'code-tags' },
+        			{ key: 'Files', label: t('files'), icon: 'file-document-box' },
 	            {
 	            	key: 'Home',
-	            	label: 'New File',
+	            	label: t('new_file'),
 	            	icon: 'file-document-edit',
 	            	params: { code: '' },
 	            	onPress: () => {
 	            		addOpenFile(openFileSchema());
 	            	}
 	            },
-	            { key: 'Settings', label: 'Settings', icon: 'settings' },
-	            { key: 'About', label: 'About', icon: 'information' },
-	            { key: 'Help', label: 'Help', icon: 'lifebuoy' }
+	            { key: 'Settings', label: t('settings'), icon: 'settings' },
+	            { key: 'About', label: t('about'), icon: 'information' },
+	            { key: 'Help', label: t('help'), icon: 'lifebuoy' }
         		]}
         		onPress={navigate}
         	/>
         }
-        openDrawerOffset={(viewport) => viewport.width - 200}
+        openDrawerOffset={(viewport) => viewport.width - 206}
         tapToClose
         type="static"
        >
@@ -192,6 +200,7 @@ function App() {
 	      	ref={_navigator}
 	        screenProps={{
 	          openDrawer: () => _drawer.current.open(),
+	          updateDrawerContent,
 	          themeOptions: [
 	          	...getThemesFromStyles('hljs'),
 	          	...getThemesFromStyles('prism'),

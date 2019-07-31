@@ -1,19 +1,21 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, ScrollView, Text } from 'react-native';
-import SyntaxHighlighter from 'react-native-syntax-highlighter';
-import HeaderButton from '../components/HeaderButton';
 import { useStoreState, useStoreActions } from 'easy-peasy';
+import HeaderButton from '../components/HeaderButton';
+import Code from '../components/Code';
 
 const Console = ({ navigation }) => {
-  const { logs, theme, themeColors: { highlightColor, backgroundColor, color } } = useStoreState(store => store);
-  const clearLogs = useStoreActions(actions => actions.clearLogs);
+  const {
+    backgroundColor
+  } = useStoreState(store => store.preferences.themeColors);
+  const logs = useStoreState(store => store.audit.logs);
+  const clearLogs = useStoreActions(actions => actions.audit.clearLogs);
 
   useEffect(() => {
     navigation.setParams({
-      highlightColor,
       clearLogs
     });
-  }, [highlightColor]);
+  }, []);
 
   return (
     <View style={styles.container(backgroundColor)}>
@@ -23,12 +25,7 @@ const Console = ({ navigation }) => {
         onLayout={() => this.flatList.scrollToEnd({animated: true})}
       >
         <View style={styles.logsView(backgroundColor)}>
-          <SyntaxHighlighter 
-            language='javascript' 
-            style={theme.styles}
-            fontSize={16}
-            highlighter={theme.highlighter}                
-          >
+          <Code>
             {
               logs
                 .map(s =>
@@ -39,7 +36,7 @@ const Console = ({ navigation }) => {
                 )
                 .join('\n')
             }
-          </SyntaxHighlighter>
+          </Code>
         </View>
       </ScrollView>
     </View>
@@ -50,7 +47,6 @@ Console.navigationOptions = ({ navigation }) => ({
   title: 'Console',
   headerRight: (
     <HeaderButton
-      underlayColor={navigation.getParam('highlightColor')}
       onPress={navigation.getParam('clearLogs')}
       name="notification-clear-all"
       style={{ marginRight: 8 }}

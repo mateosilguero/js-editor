@@ -1,25 +1,20 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, Linking, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { StyleSheet, View, Text, Linking, TouchableOpacity, Platform } from 'react-native';
 import HeaderButton from '../components/HeaderButton';
 import { useStoreState } from 'easy-peasy';
+import { t } from '../i18n';
 
 const twitterColor = '#1DA1F2';
 
-const Settings = ({ navigation, screenProps }) => {
-  const { openDrawer } = screenProps;
-  const { theme: { maincolor }, themeColors: { highlightColor } } = useStoreState(store => store);
-
-  useEffect(() => {
-    navigation.setParams({
-      openDrawer,
-      highlightColor
-    });
-  }, [highlightColor]);
-
+const Settings = () => {
+  const {
+    textcolor
+  } = useStoreState(store => store.preferences.theme);
+   
   return (
     <View style={styles.container}>
-      <Text style={styles.title(maincolor)}>
-        Created by:
+      <Text style={styles.title(textcolor)}>
+        {t('created_by')}:
       </Text>
       <TouchableOpacity
         onPress={() => Linking.openURL('https://twitter.com/mateosilguero1')}
@@ -28,19 +23,21 @@ const Settings = ({ navigation, screenProps }) => {
           Mateo Silguero
         </Text>
       </TouchableOpacity>
-      <Text style={styles.title(maincolor)}>
-        v0.0.0
+      <Text style={styles.title(textcolor)}>
+        Version: {Platform.OS === 'ios' ? '0.0.0' : '1.0.0'}
+      </Text>
+      <Text style={styles.title(textcolor)}>
+        
       </Text>
     </View>
   );
 }
 
-Settings.navigationOptions = ({ navigation }) => ({
-  title: 'About',
+Settings.navigationOptions = ({ screenProps }) => ({
+  title: t('about'),
   headerLeft: (
     <HeaderButton
-      underlayColor={navigation.getParam('highlightColor')}
-      onPress={navigation.getParam('openDrawer')}
+      onPress={screenProps.openDrawer}
       name="menu"
       style={{ marginLeft: 8 }}
     />
