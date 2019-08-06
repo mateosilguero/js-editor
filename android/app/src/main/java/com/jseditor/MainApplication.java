@@ -1,4 +1,4 @@
-package com.jseditor;
+package com.JSand;
 
 import android.app.Application;
 

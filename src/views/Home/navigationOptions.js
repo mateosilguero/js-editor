@@ -7,7 +7,7 @@ import HeaderButton from '../../components/HeaderButton';
 
 export default ({ navigation, screenProps: { openDrawer } }) => {
   return ({
-    title: 'JS',
+    title: 'JSand',
     headerRight: (
       <View style={{ flex: 1, flexDirection: 'row' }}>
         <HeaderButton
@@ -49,7 +49,12 @@ export default ({ navigation, screenProps: { openDrawer } }) => {
     ),
     headerLeft: (
       <HeaderButton
-        onPress={openDrawer}
+        onPress={() => {
+          if (navigation.getParam('isEditing')) {
+            navigation.getParam('setIsEditing')(false);
+          }
+          openDrawer();
+        }}
         name="menu"
         style={{ marginLeft: 8 }}
       />

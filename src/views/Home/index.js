@@ -139,6 +139,7 @@ const Home = ({ navigation }) => {
       undo,
       save: () => setPromptState(true),
       saveAll,
+      setIsEditing,
       isEditing,
       hasHistory: codeHistory[currentTab] && codeHistory[currentTab].length > 0
     });

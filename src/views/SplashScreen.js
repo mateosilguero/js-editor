@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, Image } from 'react-native';
 import { useStoreState } from 'easy-peasy';
+import logo from '../assets/logo.png';
 
 const SplashScreen = () => {
 	const {
@@ -12,10 +13,14 @@ const SplashScreen = () => {
 	  <View
 	  	style={styles.container(primary)}
 	  >
+      <Image
+        style={styles.image}
+        source={logo}
+      />
 	  	<Text
 	  		style={styles.title(textcolor)}
 	  	>
-	  		JS
+	  		JSand
 	  	</Text>
 	  </View>
 	);
@@ -33,10 +38,15 @@ const styles = StyleSheet.create({
     backgroundColor
   }),
   title: (color) => ({
-  	fontSize: 48,
+  	fontSize: 32,
   	fontWeight: 'bold',
   	color
-  })
+  }),
+  image: {
+    marginBottom: 16,
+    width: 180,
+    height: 180
+  }
 });
 
 export default SplashScreen;
