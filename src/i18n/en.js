@@ -32,6 +32,7 @@ export default {
 	import_files_disclaimer: 'this action will execute all files as one.',
 	run: 'Run',
   console: 'Console',
+  share: 'Share',
   save: 'Save',
   save_all: 'Save All',
   saved_files: 'Saved Files',

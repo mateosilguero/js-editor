@@ -29,6 +29,7 @@ export default {
 	import_files_disclaimer: 'Esta acción ejecutará los archivos como uno solo.',
 	run: 'Ejecutar',
   console: 'Consola',
+  share: 'Compartir',
   save: 'Guardar',
   save_all: 'Guardar Todo',
   saved_files: 'Archivos',

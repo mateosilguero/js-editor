@@ -1,8 +1,9 @@
 import React from 'react';
-import { StyleSheet, View, Text, Linking, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, Text, Linking, TouchableOpacity, Platform, Image } from 'react-native';
 import HeaderButton from '../components/HeaderButton';
 import { useStoreState } from 'easy-peasy';
 import { t } from '../i18n';
+import logo from '../assets/logo.png';
 
 const twitterColor = '#1DA1F2';
 
@@ -13,6 +14,10 @@ const Settings = () => {
    
   return (
     <View style={styles.container}>
+      <Image
+        style={styles.image}
+        source={logo}
+      />
       <Text style={styles.title(textcolor)}>
         {t('created_by')}:
       </Text>
@@ -24,7 +29,7 @@ const Settings = () => {
         </Text>
       </TouchableOpacity>
       <Text style={styles.title(textcolor)}>
-        Version: {Platform.OS === 'ios' ? '0.0.0' : '1.0.0'}
+        Version: {Platform.OS === 'ios' ? '0.0.0' : '1.2.0'}
       </Text>
       <Text style={styles.title(textcolor)}>
         
@@ -46,7 +51,9 @@ Settings.navigationOptions = ({ screenProps }) => ({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     textAlign: 'center',
     padding: 16
   },
@@ -57,7 +64,12 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     color,
     textAlignVertical: 'center'
-  })
+  }),
+  image: {
+    marginBottom: 24,
+    width: 150,
+    height: 150
+  }
 });
 
 export default Settings;

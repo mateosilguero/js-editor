@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, TextInput, TouchableHighlight, ScrollView, Keyboard, Alert } from 'react-native';
+import { Text, View, TextInput, TouchableHighlight, ScrollView, Keyboard, Alert, Share } from 'react-native';
 import { useStoreState, useStoreActions } from 'easy-peasy';
 import Prompt from '../../components/Prompt';
 import Shortcuts from '../../components/Shortcut';
@@ -121,6 +121,15 @@ const Home = ({ navigation }) => {
     }
   }
 
+  const share = async () => {
+    setIsEditing(false);
+    Keyboard.dismiss();
+    const codeToShare = await replaceIncludePlaceholdersWithFileContents(code);
+    Share.share({
+      message: codeToShare
+    });
+  }
+
   useEffect(() => {
     Keyboard.addListener(
       'keyboardDidHide',
@@ -134,6 +143,7 @@ const Home = ({ navigation }) => {
   useEffect(() => {
     navigation.setParams({
       exec,
+      share,
       comment: () => insertText('comment'),
       textcolor,
       undo,

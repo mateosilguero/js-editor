@@ -36,12 +36,14 @@ export default ({ navigation, screenProps: { openDrawer } }) => {
           options={[
             t('run'),
             t('console'),
+            t('share'),
             t('save'),
             t('save_all')
           ]}
           actions={[
             navigation.getParam('exec'),
             () => navigation.push('Console'),
+            navigation.getParam('share'),
             navigation.getParam('save'),
             navigation.getParam('saveAll')            
           ]}/>
