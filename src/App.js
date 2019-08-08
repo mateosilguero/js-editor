@@ -29,9 +29,10 @@ import { t } from './i18n';
 
 const store = createStore(storeModel);
 
-var oldLog = console.log;
+const { log, clearLogs } = store.getActions().audit;
+
+const oldLog = console.log;
 console.log = function (message) {
-	const log = store.getActions().audit.log;
   Object.values(arguments)
     .forEach(m => 
     	//null
@@ -150,9 +151,12 @@ function App() {
 	      } else {
 	      	addOpenFile(openFileSchema());
 	      	navigateOnLoad();
-	      }	      
+	      }
+			})
+			.finally(() => {
+				clearLogs();
 			});
-	}, [false]);	
+	}, []);
 
 	const getThemesFromStyles = (style) => {
 		const forbidden = ['cb', 'hopscotch', 'funky', 'pojoaque', 'schoolBook', 'xonokai', 'xt256'];

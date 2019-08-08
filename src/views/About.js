@@ -29,7 +29,7 @@ const Settings = () => {
         </Text>
       </TouchableOpacity>
       <Text style={styles.title(textcolor)}>
-        Version: {Platform.OS === 'ios' ? '0.0.0' : '1.2.0'}
+        Version: {Platform.OS === 'ios' ? '0.0.0' : '1.2.2'}
       </Text>
       <Text style={styles.title(textcolor)}>
         
