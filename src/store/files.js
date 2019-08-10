@@ -40,7 +40,11 @@ export default {
         'openedFiles',
         JSON.stringify(
           state.openedFiles
-            .map(o => o.filename)
+            .map(o =>
+              o.isForeign ?
+              ({ filename: o.filename, foreignPath: o.foreignPath }) :
+              o.filename
+            )
             .filter(n => n && n != 'untitled')
           )
       )

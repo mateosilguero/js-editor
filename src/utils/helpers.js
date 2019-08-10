@@ -17,9 +17,13 @@ export function debounce(func, wait, immediate) {
 export const openFileSchema = (
   filename = '',
   code = '',
-  initialState = code
+  initialState = code,
+  isForeign = false,
+  foreignPath = ''
 ) => ({
   filename,
   code,
-  initialState
+  initialState,
+  isForeign,
+  foreignPath
 });

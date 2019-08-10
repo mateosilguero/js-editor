@@ -35,7 +35,12 @@ const Home = ({ navigation }) => {
   const [ selection, setSelection ] = useState({ start: 0, end: 0 });
   const inputEl = useRef(null);
 
-  const { code = '', filename: currentFile = ''} = openedFiles[currentTab] || {};
+  const {
+    code = '',
+    filename: currentFile = '',
+    isForeign,
+    foreignPath
+  } = openedFiles[currentTab] || {};
   const splitedCode = code.split('\n');
 
   useEffect(() => {
@@ -60,12 +65,16 @@ const Home = ({ navigation }) => {
     const op = [ ...openedFiles ];
     const {
       filename,
-      initialState
+      initialState,
+      isForeign,
+      foreignPath
     } = (op[currentTab] || {});
     op[currentTab] = openFileSchema(
       newName || filename,
       code,
-      replaceInitialState ? code : initialState
+      replaceInitialState ? code : initialState,
+      isForeign,
+      foreignPath
     )
     setOpenedFiles(op);
   }
@@ -147,13 +156,22 @@ const Home = ({ navigation }) => {
       comment: () => insertText('comment'),
       textcolor,
       undo,
-      save: () => setPromptState(true),
+      save,
       saveAll,
       setIsEditing,
       isEditing,
       hasHistory: codeHistory[currentTab] && codeHistory[currentTab].length > 0
     });
-  }, [code, codeHistory, openedFiles, isEditing, inputEl]);
+  }, [code, isForeign, codeHistory, openedFiles, isEditing, inputEl]);
+
+  const save = () => {
+    if (isForeign) {
+      saveFile(foreignPath, code, isForeign);
+      safeSetCode(code, true);
+    } else {
+      setPromptState(true)
+    }    
+  }
 
   const saveAll = () =>
     setOpenedFiles(

@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
 import { createStackNavigator, createAppContainer, NavigationActions, StackActions } from 'react-navigation';
 import { fromRight } from 'react-navigation-transitions';
@@ -72,6 +72,7 @@ function App() {
 	const _navigator = useRef(null);
 	const _drawer = useRef(null);
 	const [_, updateDrawerContent] = useState('');
+	const [subscription, setSubscription] = useState(null);
 	const { setTheme, setLocale } = store.getActions().preferences;
 	const { addOpenFile, setOpenedFiles } = store.getActions().files;
 
@@ -91,6 +92,24 @@ function App() {
 	}
 
 	useEffect(() => {
+		setSubscription(
+			DeviceEventEmitter.addListener('openFile', function(e) {
+		    readFile(e.path, true)
+		    	.then(code =>
+		    		openFileSchema(
+		    			e.name,
+						  code,
+						  code,
+						  true,
+						  e.path
+		    		)
+		    	)
+		    	.then((schema) => {
+		    		setTimeout(() => addOpenFile(schema), 100)
+		    	})
+		    	.catch(console.log)
+		  })
+		);
 		AsyncStorage.multiGet([
 			'theme',
 			'highlighter',
@@ -116,19 +135,25 @@ function App() {
 					setLocale(locale);
 					updateDrawerContent(locale);
 				}
-	      if (opf && opf.length > 0) {
+	      if (opf && opf.length > 0) {	      	
 	      	Promise.all(
 	      		opf.map((f, i) =>
-	      			readFile(f)
+	      			readFile(
+	      				f.foreignPath || f,
+	      				f.foreignPath !== undefined
+	      			)
 	      				.catch(e => null)
 	      		)
 	      	)
-	      		.then(codeArray => codeArray.filter(x => x))	      		
+	      		.then(codeArray => codeArray.filter(x => x))	      			      		
 	      		.then(codeArray =>
 	      			codeArray.map((code, i) =>
 	      				openFileSchema(
-	      					opf[i],
-	      					code
+	      					opf[i].filename || opf[i],
+	      					code,
+	      					code,
+	      					opf[i].foreignPath,
+	      					opf[i].foreignPath
 	      				)
 	      			)
 	      		)
@@ -138,7 +163,11 @@ function App() {
 		      			AsyncStorage.setItem(
 					  			'openedFiles',
 					  			JSON.stringify(
-					  				op.map(o => o.filename)
+					  				op.map(o =>
+					  					o.isForeign ?
+				              ({ filename: o.filename, foreignPath: o.foreignPath }) :
+				              o.filename
+				            )
 					  			)
 					  		);
 					  	}
@@ -156,6 +185,9 @@ function App() {
 			.finally(() => {
 				clearLogs();
 			});
+			return () => {
+				subscription && subscription.remove();
+			}
 	}, []);
 
 	const getThemesFromStyles = (style) => {

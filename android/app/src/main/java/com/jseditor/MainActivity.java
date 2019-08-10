@@ -1,17 +1,15 @@
 package com.JSand;
 
 import com.facebook.react.ReactActivity;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableNativeMap;
+import com.facebook.react.ReactInstanceManager;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 import android.content.ContentResolver;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.util.Log;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 public class MainActivity extends ReactActivity {
 
@@ -43,19 +41,24 @@ public class MainActivity extends ReactActivity {
     if (ContentResolver.SCHEME_CONTENT.equals(scheme)) {
       try {
         ContentResolver cr = getApplicationContext().getContentResolver();
-        InputStream is = cr.openInputStream(data);
-        if(is == null) return;
 
         String name = getContentName(cr, data);
 
-        PackageManager m = getPackageManager();
-        String s = getPackageName();
-        PackageInfo p = m.getPackageInfo(s, 0);
-        s = p.applicationInfo.dataDir;
+        if (name.contains(".js")) {    
+          WritableMap resultData = new WritableNativeMap();
+          resultData.putString("name", name);
+          resultData.putString("path", data.toString());
 
-        InputStreamToFile(is, s + "/files/" + name);
+          getReactInstanceManager().getCurrentReactContext()
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+            .emit("openFile", resultData);         
+        }
       } catch (Exception e) {
-        Log.e("File Import Error", e.getMessage());
+        if(e.getMessage()!=null) {
+          Log.e("File Import Error", e.getMessage());
+        } else {
+          Log.e("File Import Error", "no message");
+        }
       }
     }
   }
@@ -68,24 +71,6 @@ public class MainActivity extends ReactActivity {
       return cursor.getString(nameIndex);
     } else {
       return null;
-    }
-  }
-
-  private void InputStreamToFile(InputStream in, String file) {
-    try {
-      OutputStream out = new FileOutputStream(new File(file));
-
-      int size = 0;
-      byte[] buffer = new byte[1024];
-
-      while ((size = in.read(buffer)) != -1) {
-        out.write(buffer, 0, size);
-      }
-
-      out.close();
-    }
-    catch (Exception e) {
-      Log.e("MainActivity", "InputStreamToFile exception: " + e.getMessage());
     }
   }
 }

@@ -11,11 +11,21 @@ const Tabs = ({ currentTab, openedFiles, setCurrentTab }) => {
   } = useStoreState(store => store.preferences);
   const closeOpenFile = useStoreActions(actions => actions.files.closeOpenFile);
 
-  const hasChanged = (index) => {
-    const file = openedFiles[index];
-    return file.code !== file.initialState ? '*' : '';
+  const renderTitle = (index) => {
+    const {
+      code,
+      filename,
+      foreignPath,
+      initialState,
+      isForeign,
+    } = openedFiles[index];
+    const path = isForeign && decodeURIComponent(foreignPath);
+    const title = isForeign ?
+      '.../'+filename :
+      (filename || 'untitled');
+    return title + (code !== initialState ? '*' : '');
   }
-  
+
   return (
   	<TabView
       navigationState={{
@@ -50,7 +60,7 @@ const Tabs = ({ currentTab, openedFiles, setCurrentTab }) => {
                 fontWeight: 'bold'
               }}
             >
-              {route.title || 'untitled'}{hasChanged(route.key)}
+              {renderTitle(route.key)}
             </Text>
           )}
         />

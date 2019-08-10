@@ -2,14 +2,22 @@ import RNFS from 'react-native-fs';
 
 const docpath = (path = '') => `${RNFS.DocumentDirectoryPath}/${path}`;
 
-export const readFile = (fileName) => RNFS.readFile(docpath(fileName), 'utf8');
+export const readFile = (fileName, isForeign) =>
+	RNFS.readFile(
+		isForeign ? fileName : docpath(fileName),
+		'utf8'
+	);
 
 export const removeFile = (fileName) => RNFS.unlink(docpath(fileName));
 
 export const mkdir = (dirpath) => RNFS.mkdir(docpath(dirpath));
 
-export const saveFile = (fileName, content) =>
-	RNFS.writeFile(docpath(fileName), content, 'utf8')
+export const saveFile = (fileName, content, isForeign) =>
+	RNFS.writeFile(
+		isForeign ? fileName : docpath(fileName),
+		content,
+		'utf8'
+	)
 		.catch((err) => {
 			const slash = '/';
 	    if (fileName.includes(slash)) {
