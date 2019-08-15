@@ -30,10 +30,15 @@ export default {
   		state.currentTab = (index || 1) - 1;
   	}
   }),
+  closeOpenFilesFromFolder: action((state, payload) => {
+    state.openedFiles = state.openedFiles.filter(n => !n.filename.includes(payload));
+    state.currentTab = 0;
+  }),
   persistOpenedFiles: actionOn(
     actions => [
       actions.addOpenFile,
-      actions.closeOpenFile
+      actions.closeOpenFile,
+      actions.closeOpenFilesFromFolder
     ],
     (state) =>
       AsyncStorage.setItem(

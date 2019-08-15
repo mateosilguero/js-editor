@@ -267,11 +267,7 @@ const Home = ({ navigation }) => {
           setPromptState(false);
         }}
       />
-      <Tabs
-        currentTab={currentTab}
-        openedFiles={openedFiles}
-        setCurrentTab={setCurrentTab}
-      />      
+      <Tabs />      
       <ScrollView>
         <View style={styles.codeContainer(color)}>
           <View style={{ paddingTop: 8, backgroundColor }}>
