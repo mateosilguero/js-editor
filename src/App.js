@@ -153,7 +153,7 @@ function App() {
 			      					opf[i].filename || opf[i],
 			      					code,
 			      					code,
-			      					opf[i].foreignPath,
+			      					opf[i].foreignPath !== undefined,
 			      					opf[i].foreignPath
 			      				)
 			      			)

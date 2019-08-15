@@ -177,10 +177,17 @@ const Home = ({ navigation }) => {
     setOpenedFiles(
       openedFiles.map((o, i) => {
         if (o.filename) {
-          saveFile(o.filename, o.code);
+          saveFile(
+            o.isForeign ? o.foreignPath : o.filename,
+            o.code,
+            o.isForeign
+          );
           return openFileSchema(
             o.filename,
-            o.code
+            o.code,
+            o.code,
+            o.isForeign,
+            o.foreignPath
           )
         } else {
           setCurrentTab(i);
