@@ -44,15 +44,13 @@ public class MainActivity extends ReactActivity {
 
         String name = getContentName(cr, data);
 
-        if (name.contains(".js")) {    
-          WritableMap resultData = new WritableNativeMap();
-          resultData.putString("name", name);
-          resultData.putString("path", data.toString());
+        WritableMap resultData = new WritableNativeMap();
+        resultData.putString("name", name);
+        resultData.putString("path", data.toString());
 
-          getReactInstanceManager().getCurrentReactContext()
-            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-            .emit("openFile", resultData);         
-        }
+        getReactInstanceManager().getCurrentReactContext()
+          .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+          .emit("openFile", resultData);
       } catch (Exception e) {
         if(e.getMessage()!=null) {
           Log.e("File Import Error", e.getMessage());

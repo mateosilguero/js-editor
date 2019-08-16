@@ -38,7 +38,7 @@ console.log = function (message) {
     	//null
     	log(m)
    	)
-  oldLog.apply(console, arguments);
+  __DEV__ && oldLog.apply(console, arguments);
 }
 
 const { primary, primaryDark, textcolor } = store.getState().preferences.theme;
@@ -96,17 +96,16 @@ function App() {
 			DeviceEventEmitter.addListener('openFile', function(e) {
 		    readFile(e.path, true)
 		    	.then(code =>
-		    		openFileSchema(
-		    			e.name,
-						  code,
-						  code,
-						  true,
-						  e.path
-		    		)
+		    		addOpenFile(
+			    		openFileSchema(
+			    			e.name,
+							  code,
+							  code,
+							  true,
+							  e.path
+			    		)
+			    	)
 		    	)
-		    	.then((schema) => {
-		    		setTimeout(() => addOpenFile(schema), 100)
-		    	})
 		    	.catch(console.log)
 		  })
 		);
@@ -125,7 +124,7 @@ function App() {
 				} = (array || []).reduce((acc, [ key, value ]) => ({
 					...acc,
 					[key]: value
-				}), {});				
+				}), {});			
 				setTheme({
 					selectedTheme: theme || 'obsidian',
 					highlighter: highlighter || 'hljs'
@@ -135,56 +134,44 @@ function App() {
 					setLocale(locale);
 					updateDrawerContent(locale);
 				}
-	      if (opf && opf.length > 0) {	      	
+	      if (opf && opf.length > 0) {
 	      	Promise.all(
 	      		opf.map((f, i) =>
 	      			readFile(
 	      				f.foreignPath || f,
 	      				f.foreignPath !== undefined
 	      			)
-	      				.catch(e => null)
+	      			.catch(() => null)
 	      		)
 	      	)
 	      		.then(codeArray => codeArray.filter(x => x))	      			      		
-	      		.then(codeArray =>
-	      			codeArray.map((code, i) =>
-	      				openFileSchema(
-	      					opf[i].filename || opf[i],
-	      					code,
-	      					code,
-	      					opf[i].foreignPath,
-	      					opf[i].foreignPath
-	      				)
-	      			)
-	      		)
-	      		.then(op => {
-	      			setOpenedFiles(op);
-	      			if (op.length != opf.length) {
-		      			AsyncStorage.setItem(
-					  			'openedFiles',
-					  			JSON.stringify(
-					  				op.map(o =>
-					  					o.isForeign ?
-				              ({ filename: o.filename, foreignPath: o.foreignPath }) :
-				              o.filename
-				            )
-					  			)
-					  		);
-					  	}
-					  	navigateOnLoad();
+	      		.then(codeArray => {
+	      			if (codeArray.length) {
+		      			codeArray.map((code, i) =>
+		      				addOpenFile(
+		      					openFileSchema(
+			      					opf[i].filename || opf[i],
+			      					code,
+			      					code,
+			      					opf[i].foreignPath !== undefined,
+			      					opf[i].foreignPath
+			      				)
+			      			)
+		      			)
+		      		} else {
+		      			addOpenFile(openFileSchema())
+		      		}
 	      		})
-	      		.catch((e) => {
-	      			navigateOnLoad();
-	          	AsyncStorage.removeItem('openedFiles');
-	      		});
+	      		.catch((e) =>
+	          	AsyncStorage.removeItem('openedFiles')
+	      		)
+	      		.finally(navigateOnLoad);
 	      } else {
 	      	addOpenFile(openFileSchema());
 	      	navigateOnLoad();
 	      }
 			})
-			.finally(() => {
-				clearLogs();
-			});
+			.finally(clearLogs);
 			return () => {
 				subscription && subscription.remove();
 			}

@@ -11,9 +11,10 @@ const SplashScreen = () => {
 
   return (
 	  <View
+      testId="splash_logo"
 	  	style={styles.container(primary)}
 	  >
-      <Image
+      <Image        
         style={styles.image}
         source={logo}
       />
