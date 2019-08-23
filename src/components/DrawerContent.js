@@ -24,6 +24,7 @@ const DrawerContent = ({ menuItems, onPress }) => {
 					menuItems
 						.map((m, index) =>
 							<TouchableOpacity
+                testID={m.label}
 								key={index}
 					      style={styles.menuItem}
 					      onPress={() => (m.onPress && m.onPress(), onPress(m.key, m.params))}

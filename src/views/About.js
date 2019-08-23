@@ -42,6 +42,7 @@ Settings.navigationOptions = ({ screenProps }) => ({
   title: t('about'),
   headerLeft: (
     <HeaderButton
+      testID="burguer"
       onPress={screenProps.openDrawer}
       name="menu"
       style={{ marginLeft: 8 }}

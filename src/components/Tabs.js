@@ -58,6 +58,7 @@ const Tabs = () => {
           }}
           renderLabel={({ route }) => (
             <Text
+              testID={route.title}
               style={{
                 color: textcolor,
                 fontSize: 17,

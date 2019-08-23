@@ -21,6 +21,7 @@ const Settings = ({ screenProps }) => {
         <Text style={styles.title}>{t('language')}:</Text>
       </Toolbar>
       <Picker
+        testID='lang_select'
         style={styles.picker}
         mode="dialog"
         onValueChange={(locale) => {
@@ -46,6 +47,7 @@ const Settings = ({ screenProps }) => {
         </Text>
       </Toolbar>
       <Picker
+        testID='theme_select'
         selectedValue={theme.selectedTheme}
         style={styles.picker}
         mode="dialog"
@@ -91,6 +93,7 @@ Settings.navigationOptions = ({ screenProps }) => ({
   title: t('settings'),
   headerLeft: (
     <HeaderButton
+      testID="burguer"
       onPress={screenProps.openDrawer}
       name="menu"
       style={{ marginLeft: 8 }}

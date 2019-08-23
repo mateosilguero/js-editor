@@ -135,7 +135,7 @@ const Files = ({ navigation }) => {
         <Text style={styles.toolbarText}>
           / { currentPath.join(' / ') }
         </Text>
-        <Text style={styles.toolbarText}>
+        <Text style={styles.toolbarText} testID="files_counter">
           {`${filesCount} ${t('files').toLowerCase()}, ${files.length - filesCount} ${t('folders')}`}
         </Text>
       </Toolbar>

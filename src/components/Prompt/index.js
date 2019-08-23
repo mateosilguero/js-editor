@@ -49,6 +49,7 @@ const Prompt = props => {
           </View>
           <View style={styles.dialogBody}>
             <TextInput
+              testID="modal_input"
               style={[styles.dialogInput, inputStyle]}
               defaultValue={defaultValue}
               onChangeText={_onChangeText}
@@ -59,14 +60,14 @@ const Prompt = props => {
               {...props.textInputProps} />
           </View>
           <View style={[styles.dialogFooter, { borderColor }]}>
-            <TouchableWithoutFeedback onPress={props.onClose}>
+            <TouchableWithoutFeedback testID="modal_cancel" onPress={props.onClose}>
               <View style={[styles.dialogAction, buttonStyle, cancelButtonStyle]}>
                 <Text style={[styles.dialogActionText, buttonTextStyle, cancelButtonTextStyle]}>
                   {cancelText}
                 </Text>
               </View>
             </TouchableWithoutFeedback>
-            <TouchableWithoutFeedback onPress={() => props.onSubmit(value)}>
+            <TouchableWithoutFeedback testID="modal_submit" onPress={() => props.onSubmit(value)}>
               <View style={[styles.dialogAction, buttonStyle, submitButtonStyle]}>
                 <Text style={[styles.dialogActionText, buttonTextStyle, submitButtonTextStyle]}>
                   {submitText}

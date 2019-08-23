@@ -311,9 +311,11 @@ const Home = ({ navigation }) => {
                       Keyboard.dismiss();
                     }}
                     value={code}
+                    testID="code_input"
                   />
                 </View> :
                 <TouchableHighlight
+                  testID="code_view"
                   style={styles.inputView}
                   onPress={() => setIsEditing(true)}
                 >

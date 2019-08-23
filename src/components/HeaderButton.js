@@ -3,13 +3,14 @@ import { TouchableHighlight } from 'react-native';
 import { useStoreState } from 'easy-peasy';
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
-const HeaderButton = ({ onPress, name, style = {}, iconStyle = {}, disabled }) => {
+const HeaderButton = ({ onPress, name, style = {}, iconStyle = {}, disabled, testID }) => {
   const {
     theme: { textcolor },
     themeColors: { highlightColor }
   } = useStoreState(store => store.preferences);
   return (
   	<TouchableHighlight
+      testID={testID}
   		disabled={disabled}
       underlayColor={highlightColor}
      	onPress={onPress}
