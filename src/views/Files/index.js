@@ -16,7 +16,12 @@ const Files = ({ navigation }) => {
     textcolor
   } = useStoreState(store => store.preferences.theme);
   const { savedFiles: files } = useStoreState(store => store.files);
-  const { setFiles, addOpenFile, closeOpenFile } = useStoreActions(actions => actions.files);
+  const {
+    setFiles,
+    addOpenFile,
+    closeOpenFile,
+    closeOpenFilesFromFolder
+  } = useStoreActions(actions => actions.files);
   const [ currentPath, setCurrentPath ] = useState([]);
   const [ promptVisible, setPromptState ] = useState(false);
   const [ loading, setLoading ] = useState(false);
@@ -94,7 +99,9 @@ const Files = ({ navigation }) => {
           onPress: () =>
             removeFile(fname)
               .then(() => {
-                closeOpenFile(fname);
+                isFile ?
+                  closeOpenFile(fname) :
+                  closeOpenFilesFromFolder(fname);
                 alert(t('remove_alert_deleted', { fname }));
                 getFiles(joinedPath);
               })
@@ -128,7 +135,7 @@ const Files = ({ navigation }) => {
         <Text style={styles.toolbarText}>
           / { currentPath.join(' / ') }
         </Text>
-        <Text style={styles.toolbarText}>
+        <Text style={styles.toolbarText} testID="files_counter">
           {`${filesCount} ${t('files').toLowerCase()}, ${files.length - filesCount} ${t('folders')}`}
         </Text>
       </Toolbar>

@@ -3,26 +3,30 @@ import { Text } from 'react-native';
 import { TabView, TabBar } from 'react-native-tab-view';
 import { useStoreState, useStoreActions } from 'easy-peasy';
 
-const Tabs = ({ currentTab, openedFiles, setCurrentTab }) => {
-  const theme = useStoreState(store => store.preferences.theme);
+const Tabs = () => {
   const {
     theme: { primary, textcolor },
     themeColors: { highlightColor }
   } = useStoreState(store => store.preferences);
-  const closeOpenFile = useStoreActions(actions => actions.files.closeOpenFile);
+  const {
+    currentTab,
+    openedFiles
+  } = useStoreState(store => store.files);
+  const  {
+    setCurrentTab,
+    closeOpenFile
+  } = useStoreActions(actions => actions.files);
 
   const renderTitle = (index) => {
     const {
       code,
       filename,
-      foreignPath,
       initialState,
       isForeign,
     } = openedFiles[index];
-    const path = isForeign && decodeURIComponent(foreignPath);
     const title = isForeign ?
-      '.../'+filename :
-      (filename || 'untitled');
+      `~/${filename}` :
+      (filename || 'untitled');
     return title + (code !== initialState ? '*' : '');
   }
 
@@ -54,6 +58,7 @@ const Tabs = ({ currentTab, openedFiles, setCurrentTab }) => {
           }}
           renderLabel={({ route }) => (
             <Text
+              testID={route.title}
               style={{
                 color: textcolor,
                 fontSize: 17,

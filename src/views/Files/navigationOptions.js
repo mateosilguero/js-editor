@@ -8,10 +8,12 @@ export default ({ navigation, navigationOptions, screenProps }) => ({
   headerRight: (
     <View style={{ flex: 1, flexDirection: 'row' }}>
       <HeaderButton
+        testID="new_file"
         onPress={navigation.getParam('newFile')}
         name="file-document-edit"
       />
       <HeaderButton
+        testID="new_folder"
         onPress={navigation.getParam('newFolder')}
         name="folder-plus"
         style={{ marginRight: 8, marginLeft: 8 }}
@@ -20,6 +22,7 @@ export default ({ navigation, navigationOptions, screenProps }) => ({
   ),
   headerLeft: (
     <HeaderButton
+      testID="burguer"
       onPress={screenProps.openDrawer}
       name="menu"
       style={{ marginLeft: 8 }}

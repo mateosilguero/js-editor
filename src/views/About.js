@@ -29,7 +29,7 @@ const Settings = () => {
         </Text>
       </TouchableOpacity>
       <Text style={styles.title(textcolor)}>
-        Version: {Platform.OS === 'ios' ? '0.0.0' : '1.3.0'}
+        Version: {Platform.OS === 'ios' ? '0.0.0' : '1.3.5'}
       </Text>
       <Text style={styles.title(textcolor)}>
         
@@ -42,6 +42,7 @@ Settings.navigationOptions = ({ screenProps }) => ({
   title: t('about'),
   headerLeft: (
     <HeaderButton
+      testID="burguer"
       onPress={screenProps.openDrawer}
       name="menu"
       style={{ marginLeft: 8 }}

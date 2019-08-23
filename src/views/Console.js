@@ -47,6 +47,7 @@ Console.navigationOptions = ({ navigation }) => ({
   title: 'Console',
   headerRight: (
     <HeaderButton
+      testID="clear_logs"
       onPress={navigation.getParam('clearLogs')}
       name="notification-clear-all"
       style={{ marginRight: 8 }}

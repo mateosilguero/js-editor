@@ -13,7 +13,7 @@ const SplashScreen = () => {
 	  <View
 	  	style={styles.container(primary)}
 	  >
-      <Image
+      <Image        
         style={styles.image}
         source={logo}
       />

@@ -5,7 +5,7 @@ import { useStoreState } from 'easy-peasy';
 const Code = ({ children }) => {
   const theme = useStoreState(store => store.preferences.theme);
   return (
-  	<SyntaxHighlighter 
+  	<SyntaxHighlighter
       language='javascript' 
       style={theme.styles}
       fontSize={17}

@@ -11,12 +11,14 @@ export default ({ navigation, screenProps: { openDrawer } }) => {
     headerRight: (
       <View style={{ flex: 1, flexDirection: 'row' }}>
         <HeaderButton
+          testID="comment"
           disabled={!navigation.getParam('isEditing')}
           onPress={navigation.getParam('comment')}
           name="format-quote-close"
           style={{ marginLeft: 8 }}
         />
         <HeaderButton
+          testID="undo"
           disabled={
             !navigation.getParam('isEditing') ||
             !navigation.getParam('hasHistory')
@@ -25,9 +27,10 @@ export default ({ navigation, screenProps: { openDrawer } }) => {
           name="undo"
           style={{ marginLeft: 8 }}
         />
-        <OptionsMenu
+        <OptionsMenu          
           customButton={
             <Icon
+              testID="options_menu"
               name="dots-vertical"
               size={28}
               style={{ margin: 8, color: navigation.getParam('textcolor') }}
@@ -51,6 +54,7 @@ export default ({ navigation, screenProps: { openDrawer } }) => {
     ),
     headerLeft: (
       <HeaderButton
+        testID="burguer"
         onPress={() => {
           if (navigation.getParam('isEditing')) {
             navigation.getParam('setIsEditing')(false);

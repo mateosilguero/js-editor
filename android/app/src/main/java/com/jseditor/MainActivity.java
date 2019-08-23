@@ -44,33 +44,28 @@ public class MainActivity extends ReactActivity {
 
         String name = getContentName(cr, data);
 
-        if (name.contains(".js")) {    
-          WritableMap resultData = new WritableNativeMap();
-          resultData.putString("name", name);
-          resultData.putString("path", data.toString());
+        WritableMap resultData = new WritableNativeMap();
+        resultData.putString("name", name);
+        resultData.putString("path", data.toString());
 
-          getReactInstanceManager().getCurrentReactContext()
-            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-            .emit("openFile", resultData);         
-        }
+        getReactInstanceManager().getCurrentReactContext()
+          .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+          .emit("openFile", resultData);
       } catch (Exception e) {
-        if(e.getMessage()!=null) {
-          Log.e("File Import Error", e.getMessage());
-        } else {
-          Log.e("File Import Error", "no message");
-        }
+        Log.e("File Import Error", e.getMessage());
       }
     }
   }
 
-  private String getContentName(ContentResolver resolver, Uri uri){
-    Cursor cursor = resolver.query(uri, null, null, null, null);
+  private String getContentName(ContentResolver resolver, Uri uri) {
+    String name = null;
+    Cursor cursor = resolver.query(uri, null, null, null, null);     
     cursor.moveToFirst();
-    int nameIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME);
+    int nameIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME);    
     if (nameIndex >= 0) {
-      return cursor.getString(nameIndex);
-    } else {
-      return null;
+      name = cursor.getString(nameIndex);
     }
+    cursor.close();
+    return name;   
   }
 }
