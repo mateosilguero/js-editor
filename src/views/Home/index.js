@@ -10,6 +10,7 @@ import { debounce, openFileSchema } from '../../utils/helpers';
 import styles from './styles.js';
 import navigationOptions from './navigationOptions.js';
 import { t } from '../../i18n';
+import nodejs from 'nodejs-mobile-react-native';
 
 const Home = ({ navigation }) => {
   const {
@@ -116,8 +117,8 @@ const Home = ({ navigation }) => {
       setIsEditing(false);
       Keyboard.dismiss();
       const codeToExecute = await replaceIncludePlaceholdersWithFileContents(code);
-      eval(codeToExecute);
-      navigation.navigate('Console');
+      //eval(codeToExecute);
+      nodejs.channel.send({ type: 'a', code, currentFile });      
     } catch (e) {
       const match = e.stack.match(/<anonymous>:\d+:\d+/g);
       const [ _, line = 0, position = 0 ] = (match && match[0] || '').split(':');
@@ -140,6 +141,31 @@ const Home = ({ navigation }) => {
   }
 
   useEffect(() => {
+    nodejs.start('main.js');
+    nodejs.channel.addListener(
+      'codeerror',
+      (e) => {
+        const match = e.stack.match(
+          new RegExp(`(${currentFile.replace('.', '\\.')}):\\d+:\\d+`, 'g')
+        );
+        const [ _, line = 0, position = 0 ] = (match && match[0] || '').split(':');
+        Alert.alert(
+          e.name,
+          `${e.message} \nline: ${line}, position: ${position}`,
+          [{ text: 'CANCEL', style: 'cancel' }],
+          { cancelable: false }
+        );
+      }
+    );
+    nodejs.channel.addListener('alert', alert);
+    nodejs.channel.addListener(
+      'log',
+      (elements) => console.log(...elements)
+    );
+    nodejs.channel.addListener(
+      'executed_successfully',
+      () => navigation.navigate('Console')
+    );
     Keyboard.addListener(
       'keyboardDidHide',
       () => setIsEditing(false),

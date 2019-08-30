@@ -41,7 +41,10 @@ export const saveFile = (fileName, content, isForeign) =>
 
 export const getAllFiles = (path) =>
 	RNFS.readDir(docpath(path))
-	  .then((result) => result.filter(r => r.name != "ReactNativeDevBundle.js"))
+	  .then((result) => result.filter(r =>
+	  	r.name != "ReactNativeDevBundle.js" &&
+	  	!r.name.includes('nodejs-')
+	  ))
 	  .catch((err) => {
 	    console.log(err.message, err.code);
 	  });

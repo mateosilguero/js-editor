@@ -3,6 +3,7 @@ package com.JSand;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.janeasystems.rn_nodejs_mobile.RNNodeJsMobilePackage;
 import com.rnfs.RNFSPackage;
 import com.swmansion.reanimated.ReanimatedPackage;
 import com.reactnativecommunity.asyncstorage.AsyncStoragePackage;
@@ -28,6 +29,7 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new RNNodeJsMobilePackage(),
             new RNFSPackage(),
             new ReanimatedPackage(),
             new AsyncStoragePackage(),
