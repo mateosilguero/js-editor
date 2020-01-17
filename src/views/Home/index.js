@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, TextInput, TouchableHighlight, ScrollView, Keyboard, Alert, Share } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ScrollView, Keyboard, Alert, Share } from 'react-native';
 import { useStoreState, useStoreActions } from 'easy-peasy';
 import Prompt from '../../components/Prompt';
 import Shortcuts from '../../components/Shortcut';
@@ -274,59 +274,59 @@ const Home = ({ navigation }) => {
           setPromptState(false);
         }}
       />
-      <Tabs />      
-      <ScrollView>
-        <View style={styles.codeContainer(color)}>
-          <View style={{ paddingTop: 8, backgroundColor }}>
-            {
-              splitedCode
-                .map((t, i) =>
-                  <Text
-                    key={i}
-                    style={styles.codeIndex(backgroundColor, color)}
-                  >
-                    {i + 1}
-                  </Text>
-                )
-            }
-          </View>
-          <ScrollView horizontal>
-            {
-              isEditing ?
-                <View style={styles.inputView(backgroundColor)}>
-                  <TextInput
-                    style={styles.input(backgroundColor, color)}
-                    ref={inputEl}
-                    multiline
-                    textBreakStrategy="balanced"
-                    textAlignVertical={"top"}
-                    autoFocus
-                    autoCapitalize="none"
-                    onChangeText={(c) => {
-                      debouncedHistory(code);
-                      safeSetCode(c);                      
-                    }}
-                    onBlur={() => {
-                      setIsEditing(false);
-                      Keyboard.dismiss();
-                    }}
-                    value={code}
-                    testID="code_input"
-                  />
-                </View> :
-                <TouchableHighlight
-                  testID="code_view"
-                  style={styles.inputView}
-                  onPress={() => setIsEditing(true)}
-                >
+      <Tabs />
+      <TouchableOpacity
+        style={{ flex: 1 }}
+        testID="code_view"
+        onPress={() => console.log('e') || setIsEditing(true)}
+      >
+        <ScrollView onPress={() => console.log('e') || setIsEditing(true)}>
+          <View style={styles.codeContainer(color)}>
+            <View style={{ paddingTop: 8, backgroundColor }}>
+              {
+                splitedCode
+                  .map((t, i) =>
+                    <Text
+                      key={i}
+                      style={styles.codeIndex(backgroundColor, color)}
+                    >
+                      {i + 1}
+                    </Text>
+                  )
+              }
+            </View>
+            <ScrollView horizontal>
+              {
+                isEditing ?
+                  <View style={styles.inputView(backgroundColor)}>
+                    <TextInput
+                      style={styles.input(backgroundColor, color)}
+                      ref={inputEl}
+                      multiline
+                      textBreakStrategy="balanced"
+                      textAlignVertical={"top"}
+                      autoFocus
+                      autoCapitalize="none"
+                      onChangeText={(c) => {
+                        debouncedHistory(code);
+                        safeSetCode(c);                      
+                      }}
+                      onBlur={() => {
+                        setIsEditing(false);
+                        Keyboard.dismiss();
+                      }}
+                      value={code}
+                      testID="code_input"
+                    />
+                  </View> :               
                   <Code>
                     {code}
-                  </Code>
-                </TouchableHighlight>
-            }
-          </ScrollView>
-        </View>
-      </ScrollView>
+                  </Code>                
+              }
+            </ScrollView>
+          </View>
+        </ScrollView>
+      </TouchableOpacity>
       <Shortcuts
         color={color}
         onPress={insertText}
