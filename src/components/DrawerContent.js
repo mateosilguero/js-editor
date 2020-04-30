@@ -1,70 +1,62 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useStoreState } from 'easy-peasy';
+import {View, TouchableOpacity, Text} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import C, {apply} from 'consistencss';
+import {useStoreState} from 'easy-peasy';
+import {t} from '../i18n';
 
-const DrawerContent = ({ menuItems, onPress }) => {
-	const {
-    theme: { primary, textcolor },
-    themeColors: {
-      backgroundColor,
-      color,
-      highlightColor
-    }
-  } = useStoreState(store => store.preferences);
-  return(
-		<View
-			style={styles.container(backgroundColor, color)}
-		>
-			<Text style={styles.title(textcolor, primary)}>
-				JS
-			</Text>
-			<View style={{ padding: 16 }}>
-				{
-					menuItems
-						.map((m, index) =>
-							<TouchableOpacity
-                testID={m.label}
-								key={index}
-					      style={styles.menuItem}
-					      onPress={() => (m.onPress && m.onPress(), onPress(m.key, m.params))}
-					     >
-					     	<Icon name={m.icon} style={{ color, fontSize: 20, paddingRight: 16, paddingTop: 4 }} />
-					      <Text style={{ color, fontSize: 20 }}>
-					      	{m.label}
-					      </Text>
-					    </TouchableOpacity>
-						)
-				}
-			</View>
-	  </View>
-	)
-}
-
-const styles = StyleSheet.create({
-  container: (backgroundColor, color) => ({
-    flex: 1,
-    backgroundColor,
-    borderRightRadius: 4,
-    borderRightWidth: 0.5,
-    borderRightColor: color
-  }),
-  title: (color, backgroundColor) => ({
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    fontSize: 24,
-    height: 104,
-    fontWeight: 'bold',
-    elevation: 3,
-    textAlign: 'right',
-    textAlignVertical: 'bottom',
-    color,
-    backgroundColor
-  }),
-  menuItem: {
-  	height: 48,
-  	flexDirection: 'row'
-  }
-});
+const DrawerContent = ({addNewFile, onPress}) => {
+  useStoreState((store) => store.preferences);
+  const menuItems = [
+    {key: 'JSand', label: t('code'), icon: 'code-tags'},
+    {key: 'Files', label: t('files'), icon: 'file-document-box'},
+    {
+      key: 'JSand',
+      label: t('new_file'),
+      icon: 'file-document-edit',
+      params: {code: ''},
+      onPress: addNewFile,
+    },
+    {key: 'Settings', label: t('settings'), icon: 'settings'},
+    {key: 'About', label: t('about'), icon: 'information'},
+    {key: 'Help', label: t('help'), icon: 'lifebuoy'},
+  ];
+  return (
+    <View>
+      <Text
+        style={apply(
+          C.textTextcolor,
+          C.bgPrimary,
+          C.alignRight,
+          C.elevation3,
+          C.weightBold,
+          C.h26,
+          C.font6,
+          C.py3,
+          C.px4,
+          {textAlignVertical: 'bottom'},
+        )}
+      >
+        JS
+      </Text>
+      <View style={C.p4}>
+        {menuItems.map((m, index) => (
+          <TouchableOpacity
+            testID={m.label}
+            key={index}
+            style={apply(C.h12, C.row)}
+            onPress={() => (m.onPress && m.onPress(), onPress(m.key, m.params))}
+          >
+            <Icon
+              name={m.icon}
+              style={apply(C.font5, C.pr4, C.pt1, C.textTextcolor)}
+            />
+            <Text style={apply(C.font5, C.textTextcolor)}>{m.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+};
 
 export default DrawerContent;

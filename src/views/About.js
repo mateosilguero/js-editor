@@ -1,53 +1,50 @@
 import React from 'react';
-import { StyleSheet, View, Text, Linking, TouchableOpacity, Platform, Image } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Linking,
+  TouchableOpacity,
+  Platform,
+  Image,
+} from 'react-native';
 import HeaderButton from '../components/HeaderButton';
-import { useStoreState } from 'easy-peasy';
-import { t } from '../i18n';
+import {useStoreState} from 'easy-peasy';
+import {t} from '../i18n';
 import logo from '../assets/logo.png';
 
 const twitterColor = '#1DA1F2';
 
 const Settings = () => {
-  const {
-    textcolor
-  } = useStoreState(store => store.preferences.theme);
-   
+  const {textcolor} = useStoreState((store) => store.preferences.theme);
+
   return (
     <View style={styles.container}>
-      <Image
-        style={styles.image}
-        source={logo}
-      />
-      <Text style={styles.title(textcolor)}>
-        {t('created_by')}:
-      </Text>
+      <Image style={styles.image} source={logo} />
+      <Text style={styles.title(textcolor)}>{t('created_by')}:</Text>
       <TouchableOpacity
         onPress={() => Linking.openURL('https://twitter.com/mateosilguero1')}
       >
-        <Text style={styles.title(twitterColor)}>
-          Mateo Silguero
-        </Text>
+        <Text style={styles.title(twitterColor)}>Mateo Silguero</Text>
       </TouchableOpacity>
       <Text style={styles.title(textcolor)}>
-        Version: {Platform.OS === 'ios' ? '0.0.0' : '1.3.7'}
+        Version: {Platform.OS === 'ios' ? '0.0.0' : '2.1.0'}
       </Text>
-      <Text style={styles.title(textcolor)}>
-        
-      </Text>
+      <Text style={styles.title(textcolor)} />
     </View>
   );
-}
+};
 
-Settings.navigationOptions = ({ screenProps }) => ({
+Settings.navigationOptions = ({screenProps}) => ({
   title: t('about'),
   headerLeft: (
     <HeaderButton
       testID="burguer"
       onPress={screenProps.openDrawer}
       name="menu"
-      style={{ marginLeft: 8 }}
+      style={{marginLeft: 8}}
     />
-  )
+  ),
 });
 
 const styles = StyleSheet.create({
@@ -56,7 +53,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
-    padding: 16
+    padding: 16,
   },
   title: (color) => ({
     height: 48,
@@ -64,13 +61,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     paddingBottom: 16,
     color,
-    textAlignVertical: 'center'
+    textAlignVertical: 'center',
   }),
   image: {
     marginBottom: 24,
     width: 150,
-    height: 150
-  }
+    height: 150,
+  },
 });
 
 export default Settings;
